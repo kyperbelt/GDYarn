@@ -66,10 +66,11 @@ func _ready():
 
 func _process(delta):
 	if !Engine.editor_hint:
-
-		if (_dialogueStarted && (
-			_dialogue.get_exec_state()!=YarnGlobals.ExecutionState.WaitingForOption) &&
-			 _dialogue.get_exec_state()!=YarnGlobals.ExecutionState.Suspended):
+		var state = _dialogue.get_exec_state()
+		if (_dialogueStarted && 
+			state!=YarnGlobals.ExecutionState.WaitingForOption &&
+			state!=YarnGlobals.ExecutionState.Suspended):
+			print("resumming")
 			_dialogue.resume()
 
 
@@ -133,22 +134,29 @@ func _load_program(source:String,fileName:String)->YarnProgram:
 func _handle_line(line):
 	var text : String =  _stringTable.get(line.id).text;
 	print(text)
-	return YarnGlobals.HandlerState.ContinueExecution 
+	if display != null:
+		display.feed_line(text)
+	return YarnGlobals.HandlerState.PauseExecution 
 
 func _handle_command(command):
 	print("command: %s"%command.command)
 	return YarnGlobals.HandlerState.ContinueExecution
 
 func _handle_options(optionSet):
-	# print("options: %s"%optionSet.options.size())
-	# for option in optionSet.options:
-	# 	print("id[%s] - destination[%s]"%[option.id,option.destination])
-	# _dialogue.set_selected_option(0)
+	print("options: %s"%optionSet.options.size())
+	for option in optionSet.options:
+		print("id[%s](%s) - destination[%s]"%[option.id,_stringTable[option.line.id].text,option.destination])
+	#_dialogue.set_selected_option(0)
 	if display != null:
-		display.feed_options(optionSet.options)
+		var lineOptions : Array = []
+		for optionIndex in range(optionSet.options.size()):
+			lineOptions.append(_stringTable[optionSet.options[optionIndex].line.id].text)
+		display.feed_options(lineOptions)
 
 func _handle_dialogue_complete():
 	print("finished")
+	if display != null:
+		display.dialogue_finished()
 	_dialogueStarted = false
 
 func _handle_node_start(node:String):

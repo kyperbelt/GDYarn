@@ -3,18 +3,29 @@ tags:
 colorID: 3
 position: 332,79
 ---
-Hello
-<<set $number to 5 >>
-<<set $cat to true>>
+Hello, what do you want to set the number to!
+-> Set Number to 6
+    <<set $number to 6 >>
+-> Set Nuber to 5
+    <<set $number to 5 >>
+We will also set a cat boolean
+-> to false
+    <<set $cat to false>>
+-> to true
+    <<set $cat to true>>
 [[SecondNode]]
 ===
 title: SecondNode
 tags: 
-position: 678.1658325195312,263.6687316894531
+position: 678.16,263.66
 ---
-Some other text
-->Only if cat is true <<if $cat == true>>
-    ok then
-->Some other option?
+sweet - Now we are in the Second node
+->This only options is showing because cat variable is true <<if $cat == true>>
+    ok then I guess cat is true
+->Some other option with no requirement
     this is some other option woooooohooo
+->This shows when number greater than 5 <<if $number > 5 >>
+    Coool, yes the number was set to 5 <<set $number to 1>>
+    But not anymore! ha
+Now we are finished, GoodBye!
 ===

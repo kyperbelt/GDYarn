@@ -60,7 +60,7 @@ func is_active()->bool:
 
 #gets the current execution state of the virtual machine
 func get_exec_state():
-	_vm.executionState
+	return _vm.executionState
 
 func set_selected_option(option:int):
 	_vm.set_selected_option(option)
