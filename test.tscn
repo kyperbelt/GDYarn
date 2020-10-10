@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://addons/kyper_gdyarn/yarn_runner.gd" type="Script" id=2]
+[ext_resource path="res://addons/kyper_gdyarn/core/variable_storage.gd" type="Script" id=3]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="YarnRunner" type="Node" parent="."]
+script = ExtResource( 2 )
+_yarnFiles = [ "C:/Users/19254/Desktop/Projects/GodotEngine/Yarn/addons/kyper_gdyarn/examples/example1.yarn" ]
+_startNode = "Start"
+_autoStart = true
+_variableStorage = NodePath("../storage")
+
+[node name="storage" type="Node" parent="."]
+script = ExtResource( 3 )

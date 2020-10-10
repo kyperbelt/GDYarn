@@ -1,0 +1,31 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=4
+
+_global_script_classes=[  ]
+_global_script_class_icons={
+
+}
+
+[application]
+
+config/name="GDYarn"
+config/icon="res://icon.png"
+
+[autoload]
+
+YarnGlobals="*res://addons/kyper_gdyarn/autoloads/execution_states.gd"
+
+[editor_plugins]
+
+enabled=PoolStringArray( "kyper_gdyarn" )
+
+[rendering]
+
+environment/default_environment="res://default_env.tres"

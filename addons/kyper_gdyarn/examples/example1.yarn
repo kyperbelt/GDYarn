@@ -1,0 +1,21 @@
+title: Start
+tags: 
+colorID: 3
+position: 332,79
+---
+Hello
+<<set $number to 5 >>
+<<set $cat to true>>
+[[SecondNode]]
+===
+title: SecondNode
+tags: 
+colorID: 0
+position: 692,229
+---
+Some other text
+->Only if cat is true <<if $cat == true>>
+    ok then
+->Some other option?
+    this is some other option woooooohooo
+===
