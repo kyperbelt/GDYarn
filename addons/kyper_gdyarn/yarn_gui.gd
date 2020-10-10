@@ -11,6 +11,7 @@ var _dialogue
 
 #called when a line is shown
 signal line_shown
+signal dialogue_finished
 
 func _ready():
     for option in _options:
@@ -38,7 +39,7 @@ func feed_options(options:Array):
             printerr("Tried to display more options than available gui components")
             break
         self.options[i].visible = true
-        self.options[i].set_text(options[i])
+        self.options[i].set_text(options[i].line.)
 
 func select_option(selection:int):
     pass

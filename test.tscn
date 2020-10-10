@@ -1,5 +1,6 @@
-[gd_scene load_steps=3 format=2]
+[gd_scene load_steps=4 format=2]
 
+[ext_resource path="res://testdisplay.tscn" type="PackedScene" id=1]
 [ext_resource path="res://addons/kyper_gdyarn/yarn_runner.gd" type="Script" id=2]
 [ext_resource path="res://addons/kyper_gdyarn/core/variable_storage.gd" type="Script" id=3]
 
@@ -10,6 +11,9 @@ script = ExtResource( 2 )
 _yarnFiles = [ "C:/Users/jonathan/Desktop/Projects/Godot/GDYarn/addons/kyper_gdyarn/examples/example1.yarn" ]
 _autoStart = true
 _variableStorage = NodePath("../storage")
+_displayInterface = NodePath("../TestDisplay")
 
 [node name="storage" type="Node" parent="."]
 script = ExtResource( 3 )
+
+[node name="TestDisplay" parent="." instance=ExtResource( 1 )]

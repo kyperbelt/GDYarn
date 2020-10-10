@@ -8,6 +8,7 @@ const YarnCompiler = preload("res://addons/kyper_gdyarn/core/compiler/compiler.g
 const LineInfo = preload("res://addons/kyper_gdyarn/core/program/yarn_line.gd")
 const Line = preload("res://addons/kyper_gdyarn/core/dialogue/line.gd")
 const YarnDialogue = preload("res://addons/kyper_gdyarn/core/dialogue.gd")
+const DisplayInterface = preload("res://addons/kyper_gdyarn/yarn_gui.gd")
 
 
 # String is a path to a PNG file in the global filesystem.
@@ -21,6 +22,7 @@ export(NodePath) var _variableStorage
 
 export(NodePath) var _displayInterface
 
+
 #programs
 var programs : Array = []#YarnProgram
 
@@ -29,9 +31,10 @@ var _stringTable : Dictionary = {}#localization support to come
 
 #dialogue
 var _dialogue : YarnDialogue
-
 var _dialogueStarted : bool = false
 
+#display interface
+var display : DisplayInterface
 
 func _ready():
 	if Engine.editor_hint:
@@ -52,6 +55,10 @@ func _ready():
 
 		_dialogue.set_program(program)
 
+		display = get_node(_displayInterface)
+
+		display._dialogue = _dialogue
+
 		if(_autoStart):
 			start()
 		pass
@@ -61,9 +68,9 @@ func _process(delta):
 	if !Engine.editor_hint:
 
 		if (_dialogueStarted && (
-			_dialogue.get_exec_state()!=YarnGlobals.ExecutionState.WaitingForOption)):
+			_dialogue.get_exec_state()!=YarnGlobals.ExecutionState.WaitingForOption) &&
+			 _dialogue.get_exec_state()!=YarnGlobals.ExecutionState.Suspended):
 			_dialogue.resume()
-			yield(get_tree().create_timer(1.0),"timeout")
 
 
 func set_file(arr):
@@ -133,10 +140,12 @@ func _handle_command(command):
 	return YarnGlobals.HandlerState.ContinueExecution
 
 func _handle_options(optionSet):
-	print("options: %s"%optionSet.options.size())
-	for option in optionSet.options:
-		print("id[%s] - destination[%s]"%[option.id,option.destination])
-	_dialogue.set_selected_option(0)
+	# print("options: %s"%optionSet.options.size())
+	# for option in optionSet.options:
+	# 	print("id[%s] - destination[%s]"%[option.id,option.destination])
+	# _dialogue.set_selected_option(0)
+	if display != null:
+		display.feed_options(optionSet.options)
 
 func _handle_dialogue_complete():
 	print("finished")
