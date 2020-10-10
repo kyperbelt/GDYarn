@@ -10,8 +10,7 @@ Hello
 ===
 title: SecondNode
 tags: 
-colorID: 0
-position: 692,229
+position: 678.1658325195312,263.6687316894531
 ---
 Some other text
 ->Only if cat is true <<if $cat == true>>

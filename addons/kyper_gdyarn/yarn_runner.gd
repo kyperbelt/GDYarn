@@ -19,6 +19,8 @@ export(bool) var _autoStart = false
 
 export(NodePath) var _variableStorage
 
+export(NodePath) var _displayInterface
+
 #programs
 var programs : Array = []#YarnProgram
 

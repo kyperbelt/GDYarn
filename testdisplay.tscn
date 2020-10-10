@@ -1,0 +1,52 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://addons/kyper_gdyarn/yarn_gui.gd" type="Script" id=1]
+
+[node name="TestDisplay" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+_textDisplay = NodePath("Label")
+_options = [ NodePath("option0"), NodePath("option1"), NodePath("option2") ]
+
+[node name="Label" type="Label" parent="."]
+margin_left = 119.403
+margin_top = 33.6516
+margin_right = 946.403
+margin_bottom = 142.652
+text = "Text here"
+
+[node name="option0" type="Button" parent="."]
+margin_left = 125.0
+margin_top = 137.0
+margin_right = 421.0
+margin_bottom = 157.0
+text = "option"
+
+[node name="option1" type="Button" parent="."]
+margin_left = 124.0
+margin_top = 167.0
+margin_right = 418.0
+margin_bottom = 187.0
+text = "option"
+
+[node name="option2" type="Button" parent="."]
+margin_left = 124.0
+margin_top = 199.0
+margin_right = 425.0
+margin_bottom = 219.0
+text = "option"
+
+[node name="Button" type="Button" parent="."]
+margin_left = 873.864
+margin_top = 116.674
+margin_right = 913.864
+margin_bottom = 136.674
+text = "next"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+[connection signal="pressed" from="Button" to="." method="finish_line"]

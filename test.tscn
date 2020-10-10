@@ -7,8 +7,7 @@
 
 [node name="YarnRunner" type="Node" parent="."]
 script = ExtResource( 2 )
-_yarnFiles = [ "C:/Users/19254/Desktop/Projects/GodotEngine/Yarn/addons/kyper_gdyarn/examples/example1.yarn" ]
-_startNode = "Start"
+_yarnFiles = [ "C:/Users/jonathan/Desktop/Projects/Godot/GDYarn/addons/kyper_gdyarn/examples/example1.yarn" ]
 _autoStart = true
 _variableStorage = NodePath("../storage")
 
