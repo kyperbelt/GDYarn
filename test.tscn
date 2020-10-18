@@ -19,8 +19,7 @@ _showTokens = true
 script = ExtResource( 3 )
 
 [node name="TestDisplay" parent="." instance=ExtResource( 1 )]
-_wordsPerSecond = 3.13
-_autoNext = true
+_wordsPerSecond = 8.118
 
 [node name="StorageDisplay" type="Label" parent="."]
 margin_left = 14.0
