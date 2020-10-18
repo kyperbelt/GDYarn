@@ -40,6 +40,7 @@ func expect_symbol(tokenTypes:Array = [])->Lexer.Token:
 		if t.type == YarnGlobals.TokenType.EndOfInput:
 			printerr("unexpected end of input")
 			return null
+		return t
 
 	for type in tokenTypes:
 		if t.type == type:

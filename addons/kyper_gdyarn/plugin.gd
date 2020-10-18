@@ -3,7 +3,7 @@ extends EditorPlugin
 
 
 var Autoloads : Dictionary = {
-	# "YarnGlobals":"res://addons/kyper_gdyarn/autoloads/execution_states.gd"
+	"YarnGlobals":"res://addons/kyper_gdyarn/autoloads/execution_states.gd"
 }
 
 var Nodes : Dictionary = {

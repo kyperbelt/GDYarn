@@ -10,16 +10,17 @@
 [node name="YarnRunner" type="Node" parent="."]
 script = ExtResource( 2 )
 _yarnFiles = [ "C:/Users/19254/Desktop/Projects/GodotEngine/Yarn/addons/kyper_gdyarn/examples/example1.yarn" ]
-_startNode = "Start"
 _autoStart = true
 _variableStorage = NodePath("../storage")
 _displayInterface = NodePath("../TestDisplay")
+_showTokens = true
 
 [node name="storage" type="Node" parent="."]
 script = ExtResource( 3 )
 
 [node name="TestDisplay" parent="." instance=ExtResource( 1 )]
-_wordsPerSecond = 5.0
+_wordsPerSecond = 3.13
+_autoNext = true
 
 [node name="StorageDisplay" type="Label" parent="."]
 margin_left = 14.0

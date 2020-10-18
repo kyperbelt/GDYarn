@@ -128,10 +128,10 @@ func analyze(context):
 func get_vm()->VirtualMachine:
 	return _vm
 
-func is_node_visited(node:String)->bool:
+func is_node_visited(node:String=_vm.current_node_name())->bool:
 	return node_visit_count(node) > 0
 
-func node_visit_count(node:String=_vm.currentNodeName)->int:
+func node_visit_count(node:String=_vm.current_node_name())->int:
 	var visitCount : int = 0
 	if _visitedNodeCount.has(node):
 		visitCount = _visitedNodeCount[node]

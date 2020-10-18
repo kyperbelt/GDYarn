@@ -22,6 +22,9 @@ export(NodePath) var _variableStorage
 
 export(NodePath) var _displayInterface
 
+export(bool) var _showTokens = false
+export(bool) var _printSyntaxTree = false
+
 
 #programs
 var programs : Array = []#YarnProgram
@@ -35,6 +38,11 @@ var _dialogueStarted : bool = false
 
 #display interface
 var display : DisplayInterface
+
+#dialogue flow control
+var next_line : String = ""#extra line will be empty when there is no next line
+var commandHandlers :  Dictionary = {} #funcRef map for text commands
+
 
 func _ready():
 	if Engine.editor_hint:
@@ -58,6 +66,7 @@ func _ready():
 		display = get_node(_displayInterface)
 
 		display._dialogue = _dialogue
+		display._dialogueRunner = self
 
 		if(_autoStart):
 			start()
@@ -70,7 +79,6 @@ func _process(delta):
 		if (_dialogueStarted && 
 			state!=YarnGlobals.ExecutionState.WaitingForOption &&
 			state!=YarnGlobals.ExecutionState.Suspended):
-			print("resumming")
 			_dialogue.resume()
 
 
@@ -118,6 +126,11 @@ func set_file(arr):
 	_yarnFiles=arr
 
 
+func add_command_handler(command:String,handler:FuncRef):
+	if(commandHandlers.has(command)):
+		printerr("replacing existing command handler for %s"%command)
+	commandHandlers[command] = handler;
+
 #get the change so we can load/unload
 func _get_diff(newOne:Array,offset:int = 0)->int:
 	for i in range(offset,_yarnFiles.size()):
@@ -128,16 +141,24 @@ func _get_diff(newOne:Array,offset:int = 0)->int:
 
 func _load_program(source:String,fileName:String)->YarnProgram:
 	var p : YarnProgram = YarnProgram.new()
-	YarnCompiler.compile_string(source,fileName,p,_stringTable)
+	YarnCompiler.compile_string(source,fileName,p,_stringTable,_showTokens,_printSyntaxTree)
 	return p
 
 func _handle_line(line):
 	var text : String =  _stringTable.get(line.id).text;
 	print(text)
-	if display != null:
-		display.feed_line(text)
-	return YarnGlobals.HandlerState.PauseExecution 
+	_pass_line(text)
 
+	return YarnGlobals.HandlerState.PauseExecution
+
+func consume_line():
+	_pass_line(next_line)
+	next_line = ""
+
+func _pass_line(lineText:String):
+	if display != null:
+		if !display.feed_line(lineText):
+			next_line = lineText
 func _handle_command(command):
 	print("command: %s"%command.command)
 	return YarnGlobals.HandlerState.ContinueExecution
@@ -160,11 +181,13 @@ func _handle_dialogue_complete():
 	_dialogueStarted = false
 
 func _handle_node_start(node:String):
-	print("nodeStarted: %s"%node)
-	yield(get_tree().create_timer(1.0), "timeout")
+	if !_dialogue._visitedNodeCount.has(node):
+		_dialogue._visitedNodeCount[node] = 1
+	else:
+		_dialogue._visitedNodeCount[node]+=1
 
 func _handle_node_complete(node:String):
-	print("nodeComplete: %s"%node)
+	
 	return YarnGlobals.HandlerState.ContinueExecution
 	
 
@@ -173,5 +196,4 @@ func start(node : String = _startNode):
 		return 
 	_dialogueStarted = true
 	_dialogue.set_node(node)
-	yield(get_tree().create_timer(1.0), "timeout")
 

@@ -117,6 +117,11 @@ func create_states():
 	_states[COMMAND].add_transition(YarnGlobals.TokenType.Identifier,command_or_expression)
 	_states[COMMAND].add_text_rule(YarnGlobals.TokenType.Text)
 
+	_states[command_or_expression] = LexerState.new(patterns)
+	_states[command_or_expression].add_transition(YarnGlobals.TokenType.LeftParen,EXPRESSION)
+	_states[command_or_expression].add_transition(YarnGlobals.TokenType.EndCommand,BASE,true)
+	_states[command_or_expression].add_text_rule(YarnGlobals.TokenType.Text)
+
 	_states[ASSIGNMENT] = LexerState.new(patterns)
 	_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.Variable)
 	_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.EqualToOrAssign, EXPRESSION)

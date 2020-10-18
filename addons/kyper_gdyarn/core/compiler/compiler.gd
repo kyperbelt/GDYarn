@@ -38,7 +38,7 @@ var _stringCount : int = 0
 #<int, YarnGlobals.TokenType>
 var _tokens : Dictionary = {}
 
-static func compile_string(source:String,filename,program:YarnProgram,strings:Dictionary)->int:
+static func compile_string(source:String,filename,program:YarnProgram,strings:Dictionary,showTokens:bool = false,printTree : bool = false)->int:
 	
 	var Parser = load("res://addons/kyper_gdyarn/core/compiler/parser.gd")
 	var Compiler = load("res://addons/kyper_gdyarn/core/compiler/compiler.gd")
@@ -109,11 +109,13 @@ static func compile_string(source:String,filename,program:YarnProgram,strings:Di
 		var lexer = Lexer.new()
 
 		var tokens : Array = lexer.tokenize(body)
-		print_tokens(tokens)
+		if(showTokens):
+			print_tokens(tokens)
 		var parser = Parser.new(tokens)
 
 		var parserNode = parser.parse_node()
-		print(parserNode.tree_string(0))
+		if printTree:
+			print(parserNode.tree_string(0))
 
 		parserNode.name = title
 		parsedNodes.append(parserNode)
