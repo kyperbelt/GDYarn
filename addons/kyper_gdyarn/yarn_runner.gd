@@ -12,7 +12,7 @@ const DisplayInterface = preload("res://addons/kyper_gdyarn/yarn_gui.gd")
 
 
 # String is a path to a PNG file in the global filesystem.
-export(Array,String, FILE, GLOBAL, "*.yarn") var _yarnFiles setget set_file
+export(Array,String,FILE, "*.yarn") var _yarnFiles setget set_file
 
 export(String) var _startNode = "Start"
 
@@ -50,7 +50,6 @@ func _ready():
 
 		pass 
 	else:
-		#inside the editor
 		_dialogue = YarnDialogue.new(get_node(_variableStorage))
 		_dialogue.get_vm().lineHandler = funcref(self,"_handle_line")
 		_dialogue.get_vm().optionsHandler = funcref(self,"_handle_options")
@@ -70,7 +69,6 @@ func _ready():
 
 		if(_autoStart):
 			start()
-		pass
 
 
 func _process(delta):
@@ -104,7 +102,6 @@ func set_file(arr):
 					index = i
 					break
 			if index != -1:
-				programs[index].free()
 				programs.remove(index)
 	else:
 		var index:int = _get_diff(arr)
@@ -118,7 +115,6 @@ func set_file(arr):
 				var source : String = f.get_as_text()
 				f.close()
 				if programs.size() == arr.size():
-					programs[index].free()
 					programs[index] = _load_program(source,arr.back())
 				else:
 					programs.insert(index,_load_program(source,arr.back()))
@@ -129,7 +125,7 @@ func set_file(arr):
 func add_command_handler(command:String,handler:FuncRef):
 	if(commandHandlers.has(command)):
 		printerr("replacing existing command handler for %s"%command)
-	commandHandlers[command] = handler;
+	commandHandlers[command] = handler
 
 #get the change so we can load/unload
 func _get_diff(newOne:Array,offset:int = 0)->int:
@@ -142,10 +138,11 @@ func _get_diff(newOne:Array,offset:int = 0)->int:
 func _load_program(source:String,fileName:String)->YarnProgram:
 	var p : YarnProgram = YarnProgram.new()
 	YarnCompiler.compile_string(source,fileName,p,_stringTable,_showTokens,_printSyntaxTree)
+	# TODO: Save program to file?
 	return p
 
 func _handle_line(line):
-	var text : String =  _stringTable.get(line.id).text;
+	var text : String =  _stringTable.get(line.id).text
 	print(text)
 	_pass_line(text)
 
@@ -159,6 +156,7 @@ func _pass_line(lineText:String):
 	if display != null:
 		if !display.feed_line(lineText):
 			next_line = lineText
+
 func _handle_command(command):
 	print("command: %s"%command.command)
 	return YarnGlobals.HandlerState.ContinueExecution

@@ -50,7 +50,7 @@ func ge(param1:Value,param2:Value):
 func geq(param1:Value,param2:Value):
     return param1.geq(param2)
 
-func le(param1:Value,param2:Value):
+func le(param1: Value,param2:Value):
     return param1.less(param2)
 
 func leq(param1:Value,param2:Value):

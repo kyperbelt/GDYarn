@@ -122,7 +122,7 @@ func add_program(program):
 		_program = YarnGlobals.combine_programs([_program,program])
 
 func analyze(context):
-	print("sike: not implemented")
+	print(": not implemented")
 	pass
 
 func get_vm()->VirtualMachine:

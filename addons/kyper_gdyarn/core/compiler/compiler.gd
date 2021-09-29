@@ -491,6 +491,7 @@ func emit_error(error : int)->void:
 
 
 static func print_tokens(tokens:Array=[]):
+	print("showing tokens i guess")
 	var list : PoolStringArray = []
 	list.append("\n")
 	for token in tokens:

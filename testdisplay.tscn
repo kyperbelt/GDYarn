@@ -49,4 +49,5 @@ text = "next"
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
 [connection signal="pressed" from="Button" to="." method="finish_line"]

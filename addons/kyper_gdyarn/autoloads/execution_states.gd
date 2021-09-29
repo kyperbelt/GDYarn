@@ -196,17 +196,22 @@ func token_name(type)->String:
 
 #combine all the programs in the provided array
 static func combine_programs(programs : Array = []):
-	var YarnProgram = load("res://addons/kyper_gdyarn/core/program/program.gd")
-	if programs.size() == 0:
+	print("combine programs called")
+	if programs.empty():
 		printerr("no programs to combine - you failure")
-		return
+		return null
+
+	var YarnProgram = load("res://addons/kyper_gdyarn/core/program/program.gd")
 	var p = YarnProgram.new()
+
+	print("new program yarnnodes = %s" % p.yarnNodes.size())
 
 	for program in programs:
 		for nodeKey in program.yarnNodes.keys():
-			if p.yarnNodes.has(nodeKey):
+			if p.has_yarn_node(nodeKey):
+				print("programs.size = %s" % programs.size())
 				printerr("Program with duplicate node names %s "% nodeKey)
-				return
+				return null
 			p.yarnNodes[nodeKey] = program.yarnNodes[nodeKey]
 
 	return p

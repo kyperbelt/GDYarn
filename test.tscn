@@ -7,14 +7,6 @@
 
 [node name="Node2D" type="Node2D"]
 
-[node name="YarnRunner" type="Node" parent="."]
-script = ExtResource( 2 )
-_yarnFiles = [ "C:/Users/19254/Desktop/Projects/GodotEngine/Yarn/addons/kyper_gdyarn/examples/example1.yarn" ]
-_autoStart = true
-_variableStorage = NodePath("../storage")
-_displayInterface = NodePath("../TestDisplay")
-_showTokens = true
-
 [node name="storage" type="Node" parent="."]
 script = ExtResource( 3 )
 
@@ -30,3 +22,10 @@ script = ExtResource( 4 )
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="YarnRunner" type="Node" parent="."]
+script = ExtResource( 2 )
+_yarnFiles = [ "res://addons/kyper_gdyarn/examples/example1.yarn" ]
+_autoStart = true
+_variableStorage = NodePath("../storage")
+_displayInterface = NodePath("../TestDisplay")

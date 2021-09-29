@@ -8,9 +8,14 @@
 
 config_version=4
 
-_global_script_classes=[  ]
+_global_script_classes=[ {
+"base": "Resource",
+"class": "CompiledProgram",
+"language": "GDScript",
+"path": "res://addons/kyper_gdyarn/compiled_program.gd"
+} ]
 _global_script_class_icons={
-
+"CompiledProgram": ""
 }
 
 [application]
