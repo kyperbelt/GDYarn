@@ -57,7 +57,7 @@ static func compile_string(source:String,filename,program:YarnProgram,strings:Di
 	#check for atleast one node start
 	if !headerSep.search(source):
 		printerr("Error parsing yarn input : No headers found")
-		return -1 #return more specific error code
+		return -1 #TODO: return more specific error code
 	
 	var lineNumber: int = 0 
 	

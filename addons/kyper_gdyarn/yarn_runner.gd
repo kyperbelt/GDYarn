@@ -12,7 +12,7 @@ const DisplayInterface = preload("res://addons/kyper_gdyarn/yarn_gui.gd")
 
 
 # String is a path to a PNG file in the global filesystem.
-export(Array,String,FILE, "*.yarn") var _yarnFiles setget set_file
+export(Resource) var _compiledYarnProgram setget set_program
 
 export(String) var _startNode = "Start"
 
@@ -24,10 +24,6 @@ export(NodePath) var _displayInterface
 
 export(bool) var _showTokens = false
 export(bool) var _printSyntaxTree = false
-
-
-#programs
-var programs : Array = []#YarnProgram
 
 var _stringTable : Dictionary = {}#localization support to come
 
@@ -58,7 +54,7 @@ func _ready():
 		_dialogue.get_vm().dialogueCompleteHandler = funcref(self,"_handle_dialogue_complete")
 		_dialogue.get_vm().nodeStartHandler = funcref(self,"_handle_node_start")
 
-		var program : YarnProgram = YarnGlobals.combine_programs(programs)
+		var program : YarnProgram = _compiledYarnProgram.program
 
 		_dialogue.set_program(program)
 
@@ -70,6 +66,13 @@ func _ready():
 		if(_autoStart):
 			start()
 
+func set_program(program):
+	if program && program.has_method("_load_program"):
+		_compiledYarnProgram = program
+		_compiledYarnProgram.showTokens = _showTokens
+		_compiledYarnProgram.printSyntax = _printSyntaxTree
+	elif !program:
+		_compiledYarnProgram = program
 
 func _process(delta):
 	if !Engine.editor_hint:
@@ -80,66 +83,11 @@ func _process(delta):
 			_dialogue.resume()
 
 
-func set_file(arr):
-	if arr.size() != _yarnFiles.size():
-		if arr.size() > _yarnFiles.size(): 
-			#case where we added a new script
-			#assume it was added at the end
-			if (!arr.back().empty()):
-				var f = File.new()
-				f.open(arr.back(),File.READ)
-				var source : String = f.get_as_text()
-				f.close()
-				programs.append(_load_program(source,arr.back()))
-
-		else:
-			#case where we removed a yarn script
-			#we have to figure out which one is the
-			#one we removed and also get rid of the program
-			var index:int = -1
-			for i in range(_yarnFiles.size()):
-				if !(_yarnFiles[i] in arr):
-					index = i
-					break
-			if index != -1:
-				programs.remove(index)
-	else:
-		var index:int = _get_diff(arr)
-		#script was changed
-		print("difference %s"%index)
-		if index != -1:
-			
-			if (!arr[index].empty()):
-				var f = File.new()
-				f.open(arr[index],File.READ)
-				var source : String = f.get_as_text()
-				f.close()
-				if programs.size() == arr.size():
-					programs[index] = _load_program(source,arr.back())
-				else:
-					programs.insert(index,_load_program(source,arr.back()))
-				
-	_yarnFiles=arr
-
-
 func add_command_handler(command:String,handler:FuncRef):
 	if(commandHandlers.has(command)):
 		printerr("replacing existing command handler for %s"%command)
 	commandHandlers[command] = handler
 
-#get the change so we can load/unload
-func _get_diff(newOne:Array,offset:int = 0)->int:
-	for i in range(offset,_yarnFiles.size()):
-		if _yarnFiles[i] != newOne[i]:
-			return i
-	return -1
-
-
-func _load_program(source:String,fileName:String)->YarnProgram:
-	var p : YarnProgram = YarnProgram.new()
-	YarnCompiler.compile_string(source,fileName,p,_stringTable,_showTokens,_printSyntaxTree)
-	# TODO: Save program to file?
-	return p
 
 func _handle_line(line):
 	var text : String =  _stringTable.get(line.id).text
