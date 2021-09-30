@@ -1,0 +1,47 @@
+#+TITLE: GDYARN
+#+AUTHOR: Jonathan Camarena (kyperbelt)
+
+* GD YARN
+** Contents
+- [[Introduction][Introduction]]
+- [[Features][Features]]
+- [[Installation][Installation]]
+- [[Todo][Todo]]
+
+** Introduction
+GD Yarn is an godot plugin that allows you to create rich and interative dialogues using a simple markup language similar to twine. It is easy to get started writing simple scripts, but powerful enough to your games dialogue to the next level with branching narratives that can change based on the players actions.
+
+GD yarn is an implementation of [[https://yarnspinner.dev][YarnSpinner]] completely written in gdscript. The project aims to be as feature complete as possible compared to the c# version but may forgoe certain things in lue of similar alternatives that make it blend better with the godot ecosystem.
+
+** Features
++ Combine multiple .yarn files into a single program
++ Support for shortcut options for cleaner more concise .yarn files
++ Easily extensible api that allows you to add functionality to your yarn files
+
+** Installation
+*** Install from AssetLib
+*** Install from GitHub
+
+** Todo
+*** TODO Save programs and string data to disk [0/4]
+- [ ] Save programs to resource
+- [ ] Save strings to resrouce
+  - [ ] strings saved as plain text with each line containing a new string
+  - [ ] provide some way to interface with godot localization
+- [ ] make yarn_runner use resource to store programs paths
+  - [ ] once paths are added - compile and save programs to disk
+  - [ ] If compiled program exists then dont recompile unless a setting is checked
+
+*** TODO Integrate signals into display interface [0/5]
+- [ ] Signals from display to inform runner when to continue
+- [ ] Signals from runner to inform when next_line is ready
+- [ ] signals from variable storage to inform runner when something is changed
+- [ ] Signals should be accesible to other scripts
+
+*** TODO library imports as scripts [/]
+- [ ] Save library as a resource
+- [ ] Libray has array of script exports
+- [ ] Must explicitly point to library resource in runner
+- [ ] script exports get loaded at runtime
+*** TODO Create video tutorial
+*** TODO Implement error reporting
