@@ -1,7 +1,6 @@
 #+TITLE: GDYARN
 #+AUTHOR: Jonathan Camarena (kyperbelt)
 
-* GD YARN
 ** Contents
 - [[Introduction][Introduction]]
 - [[Features][Features]]
