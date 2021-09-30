@@ -1,5 +1,6 @@
 #+TITLE: GDYARN
 #+AUTHOR: Jonathan Camarena (kyperbelt)
+#+OPTIONS: toc:3
 
 ** Contents
 - [[Introduction][Introduction]]
