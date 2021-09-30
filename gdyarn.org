@@ -1,6 +1,5 @@
 #+TITLE: GDYARN
 #+AUTHOR: Jonathan Camarena (kyperbelt)
-#+OPTIONS: toc:3
 
 ** Contents
 - [[Introduction][Introduction]]
@@ -11,7 +10,7 @@
 ** Introduction
 GD Yarn is an godot plugin that allows you to create rich and interative dialogues using a simple markup language similar to twine. It is easy to get started writing simple scripts, but powerful enough to your games dialogue to the next level with branching narratives that can change based on the players actions.
 
-GD yarn is an implementation of [[https://yarnspinner.dev][YarnSpinner]] completely written in gdscript. The project aims to be as feature complete as possible compared to the c# version but may forgoe certain things in lue of similar alternatives that make it blend better with the godot ecosystem.
+GD yarn is an implementation of [[https://yarnspinner.dev][YarnSpinner]] completely written in gdscript. The project aims to be as feature complete as possible compared to the c# version but may forgoe certain things in lieu of similar alternatives that make it blend better with the godot ecosystem.
 
 ** Features
 + Combine multiple .yarn files into a single program
