@@ -7,7 +7,7 @@
 - [[#Features][Features]]
 - [[#Installation][Installation]]
 - [[#Quickstart][Quickstart]]
-- [[Todo][Todo]]
+- [[#Todo][Todo]]
 
 * Introduction
 :PROPERTIES:
@@ -21,15 +21,15 @@ GD yarn is an implementation of [[https://yarnspinner.dev][YarnSpinner]] complet
 :PROPERTIES:
 :CUSTOM_ID: Features
 :END:
-*** DONE Compile multiple Yarn files into a single Program
-*** STRT Persistant Variable Storage
-*** DONE Custom Commands
-*** DONE Libary Extensions
-*** TODO Format functions
-*** DONE Option Links
-*** DONE Shortcut Options
-*** TODO Localization
-*** DONE IF/ELSE Statements
+- [X] Compile multiple Yarn files into a single Program
+- [-] Persistant Variable Storage
+- [-] Custom Commands
+- [X] Libary Extensions
+- [ ] Format functions
+- [X] Option Links
+- [X] Shortcut Options
+- [-] Localization
+- [X] IF/ELSE Statements
 
 * Installation
 :PROPERTIES:
