@@ -2,12 +2,9 @@ tool
 extends Node
 
 
-const YarnCompiler = preload("res://addons/gdyarn/core/compiler/compiler.gd")
-const YarnProgram = YarnCompiler.YarnProgram
-const YarnGlobals = YarnCompiler.YarnGlobals
 const DisplayInterface = preload("res://addons/gdyarn/yarn_gui.gd")
 
-const LineInfo = YarnCompiler.LineInfo
+const LineInfo = preload("res://addons/gdyarn/core/program/yarn_line.gd")
 const Line = preload("res://addons/gdyarn/core/dialogue/line.gd")
 
 
@@ -27,6 +24,9 @@ export(bool) var _printSyntaxTree = false setget set_ast
 export(String) var locale = "en_US" setget set_locale
 
 export(String, DIR) var filepath = "" setget set_filepath
+
+# show debug statements
+export(bool) var debug = true
 
 var _stringTable : Dictionary = {}#localization support to come
 
@@ -62,8 +62,8 @@ func _ready():
 		_dialogue.get_vm().dialogueCompleteHandler = funcref(self,"_handle_dialogue_complete")
 		_dialogue.get_vm().nodeStartHandler = funcref(self,"_handle_node_start")
 
-		var result : Array = _compiledYarnProgram._load_compiled_program()
-		var program : YarnProgram = _compiledYarnProgram.program
+		_compiledYarnProgram._load_compiled_program()
+		var program = _compiledYarnProgram.program
 		_stringTable = program.yarnStrings
 
 		_dialogue.set_program(program)
@@ -74,7 +74,7 @@ func _ready():
 		display._dialogueRunner = self
 
 		if(_autoStart):
-			start()
+			start(_startNode)
 
 func set_tokens(value):
 	_showTokens = value
@@ -104,9 +104,9 @@ func set_program(program):
 		_compiledYarnProgram.printSyntax = _printSyntaxTree
 		_compiledYarnProgram.path = filepath
 		_compiledYarnProgram.locale = locale
-		_compiledYarnProgram.connect("debug_changed",_compiledYarnProgram,"_debug_changed",_showTokens,_printSyntaxTree)
-		_compiledYarnProgram.connect("path_changed",_compiledYarnProgram,"_set_path",filepath)
-		_compiledYarnProgram.connect("locale_changed",_compiledYarnProgram,"_set_locale",locale)
+		connect("debug_changed",_compiledYarnProgram,"_debug_changed")
+		connect("path_changed",_compiledYarnProgram,"_set_path")
+		connect("locale_changed",_compiledYarnProgram,"_set_locale")
 	elif program && !program.has_method("_load_program"):
 		# if its the wrong type of resource then we
 		# dont load anything
@@ -128,9 +128,9 @@ func add_command_handler(command:String,handler:FuncRef):
 
 
 func _handle_line(line):
-	print(_stringTable)
 	var text : String =  (_stringTable.get(line.id) as LineInfo).text
-	print(text)
+	if debug:
+		print("line: %s" %text)
 	_pass_line(text)
 
 	return YarnGlobals.HandlerState.PauseExecution
@@ -145,13 +145,16 @@ func _pass_line(lineText:String):
 			next_line = lineText
 
 func _handle_command(command):
-	print("command: %s"%command.command)
+	if debug:
+		print("command: %s"%command.command)
 	return YarnGlobals.HandlerState.ContinueExecution
 
 func _handle_options(optionSet):
-	print("options: %s"%optionSet.options.size())
-	for option in optionSet.options:
-		print("id[%s](%s) - destination[%s]"%[option.id,_stringTable[option.line.id].text,option.destination])
+	if debug:
+		print("options: %s"%optionSet.options.size())
+		for option in optionSet.options:
+			print("id[%s](%s) - destination[%s]"%[option.id,_stringTable[option.line.id].text,option.destination])
+
 	#_dialogue.set_selected_option(0)
 	if display != null:
 		var lineOptions : Array = []
@@ -160,7 +163,8 @@ func _handle_options(optionSet):
 		display.feed_options(lineOptions)
 
 func _handle_dialogue_complete():
-	print("finished")
+	if debug:
+		print("finished")
 	if display != null:
 		display.dialogue_finished()
 	_dialogueStarted = false

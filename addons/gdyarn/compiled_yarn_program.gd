@@ -3,8 +3,7 @@ extends Resource
 
 class_name CompiledYarnProgram
 
-const ProgramUtils = load("res://addons/gdyarn/core/program/program_utils.gd")
-const YarnGlobals = ProgramUtils.YarnGlobals
+const ProgramUtils = preload("res://addons/gdyarn/core/program/program_utils.gd")
 const YarnProgram = ProgramUtils.YarnProgram
 const EXTENSION := "cyarn"
 
@@ -13,7 +12,7 @@ export(String) var _program_name = "compiled_yarn_program" setget set_program_na
 
 # recompile the program next time the scene is ran
 # this should be checked off during production
-export(bool) var _compile = false setget _compile
+export(bool) var _compile = false setget _set_compile
 
 # TODO: save this to a plain txt file and then load it in each
 #       time before we run the program
@@ -26,22 +25,26 @@ var locale : String = ""
 
 var program : YarnProgram = null
 
+var dirty = false
 
 func _init():
 	pass
 
-func _compile(value):
+func _set_compile(value):
 	_compile = value
-	_save_compiled_program()
+	if dirty:
+		_save_compiled_program()
+		dirty = false
 
 func _load_program(source:String,fileName:String)->YarnProgram:
 	var p : YarnProgram = YarnProgram.new()
 	var YarnCompiler = load("res://addons/gdyarn/core/compiler/compiler.gd")
 	YarnCompiler.compile_string(source,fileName,p,showTokens,printSyntax)
+	dirty = true
 	return p
 
 func _set_path(path):
-	self.filepath = path
+	self.path= path
 
 func _set_locale(locale):
 	self.locale = locale
@@ -77,6 +80,8 @@ func _reload_all_programs(arr:Array):
 		program = null
 
 func set_files(arr):
+	if !Engine.editor_hint:
+		return
 	if arr.size() > _yarnPrograms.size():
 		# added new program file
 		if !arr.back().empty() && !_yarnPrograms.has(arr.back()):

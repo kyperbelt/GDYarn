@@ -17,6 +17,7 @@ const INSTRUCTION_OPERANDS := "instruction_operands"
 const OPERAND_TYPE   := "operand_type"
 const OPERAND_VALUE  := "operand_value"
 
+const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
 const Operand     = preload("res://addons/gdyarn/core/program/operand.gd")
 const YarnProgram = preload("res://addons/gdyarn/core/program/program.gd")
 const Instruction = preload("res://addons/gdyarn/core/program/instruction.gd")
@@ -31,11 +32,11 @@ func _init():
 static func export_program(program,filePath):
 	var file := File.new()
 
-	var stringsPath = "%s/%s.strings" % [filePath.get_base_dir(),filePath.get_basename()]
-	var lineInfos = program.stringTable
-	var result : Array = _searialize_lines(lineInfos)
+	var stringsPath = "%s%s.strings" % [filePath.get_base_dir(),filePath.get_basename()]
+	var lineInfos = program.yarnStrings
+	var result : Array = _serialize_lines(lineInfos)
 
-	program._lineInfos.result[0]
+	program._lineInfos = result[0]
 	var strings : Array = result[1]
 
 	file.open(stringsPath,File.WRITE)
@@ -44,11 +45,13 @@ static func export_program(program,filePath):
 
 	file.close()
 
-	file.open(filePath,File.WRITE)
+	var otherfile = File.new()
+
+	otherfile.open(filePath,File.WRITE)
 	var prog = YarnProgram.new() if program == null else program
 	var serialized_program = _serialize_program(prog)
-	file.store_line(var2str(serialized_program))
-	file.close()
+	otherfile.store_line(var2str(serialized_program))
+	otherfile.close()
 
 	pass
 
@@ -84,19 +87,19 @@ static func _serialize_all_nodes(nodes)->Array:
 	return result
 
 # return an array
-static func _searialize_lines(lines)->Array:
+static func _serialize_lines(lines)->Array:
 
 	var lineInfos : Array = []
 	var lineTexts : Array = []
 	for lineKey in lines.keys():
 		var line = lines[lineKey]
 		var lineInfo := []
-		lineInfo+= lineKey
-		lineInfo+= line.nodeName
-		lineInfo+= line.lineNumber
-		lineInfo+= line.fileName
-		lineInfo+= line.implicit
-		lineInfo+= line.meta
+		lineInfo.append(lineKey)
+		lineInfo.append(line.nodeName)
+		lineInfo.append(line.lineNumber)
+		lineInfo.append(line.fileName)
+		lineInfo.append(line.implicit)
+		lineInfo.append(line.meta)
 
 		lineInfos.append(lineInfo)
 		lineTexts.append(line.text)
@@ -152,24 +155,26 @@ static func _serialize_all_operands(operands)->Array:
 
 	return result
 
-# import the program at the file destination
+# import the program at the otherfile destination
 # return null if no file exitst
 static func _import_program(filePath)->YarnProgram:
 	var file := File.new()
 
-	var stringsPath = "%s/%s.strings" % [filePath.get_base_dir(),filePath.get_basename()]
-	var localizedStringsPath = "%s/%s-%s.strings" % [filePath.get_base_dir(),filePath.get_basename(),TranslationServer.get_locale()]
+	var stringsPath = "%s%s.strings" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename()]
+	var localizedStringsPath = "%s%s-%s.strings" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename(),TranslationServer.get_locale()]
 	var strings : Array
 
-	if file.exists(localizedStringsPath):
+	if file.file_exists(localizedStringsPath):
 		file.open(localizedStringsPath,File.READ)
-	elif file.exists(stringsPath):
+	elif file.file_exists(stringsPath):
 		file.open(stringsPath,File.READ)
 	else:
-		printerr("No strings file found for this program[%s], make one or recompile the program."%filePath.get_basename())
+		printerr("%s file found for this program[%s], make one or recompile the program."%[stringsPath,filePath.get_basename()])
 
 	strings = str2var(file.get_as_text())
 	file.close()
+
+	file = File.new()
 
 	file.open(filePath,File.READ)
 	var data : Dictionary = str2var(file.get_as_text())
@@ -272,6 +277,6 @@ static func combine_programs(programs : Array = []):
 				return null
 			p.yarnNodes[nodeKey] = program.yarnNodes[nodeKey]
 
-			YarnGlobals.merge_dir(p.yarnStrings,program.yarnString)
+			YarnGlobals.merge_dir(p.yarnStrings,program.yarnStrings)
 
 	return p

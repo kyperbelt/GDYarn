@@ -135,7 +135,7 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 
 
 static func merge_dir(target, patch):
-		for key in patch:
+		for key in patch.keys():
 			target[key] = patch[key]
 
 func compile_node(program:YarnProgram,parsedNode)->void:
