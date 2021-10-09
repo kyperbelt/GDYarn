@@ -22,7 +22,7 @@ GD yarn is an implementation of [[https://yarnspinner.dev][YarnSpinner]] complet
 :CUSTOM_ID: Features
 :END:
 - [X] Compile multiple Yarn files into a single Program
-- [-] Persistant Variable Storage
+- [-] Persistent Variable Storage
 - [-] Custom Commands
 - [X] Libary Extensions
 - [ ] Format functions
@@ -81,7 +81,7 @@ You must include a YarnRunner node to the project
 
 ** TODO Optimization and Improvements [0/5]
 - [ ] Add yarn script analyzer for generated IR
-- [ ] change addon folder name : "kyper_gdyarn" ->  "gdyarn"
+- [X] change addon folder name : "kyper_gdyarn" ->  "gdyarn"
 - [ ] Better error
 - [ ] Implement [[https://yarnspinner.dev/docs/syntax/#format-functions][Format Functions]]
 - [ ] Add appropriately sized icons to included nodes
