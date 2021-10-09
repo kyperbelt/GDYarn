@@ -8,8 +8,9 @@ const LineInfo = preload("res://addons/gdyarn/core/program/yarn_line.gd")
 const Line = preload("res://addons/gdyarn/core/dialogue/line.gd")
 
 
-# String is a path to a PNG file in the global filesystem.
-export(Resource) var _compiledYarnProgram setget set_program
+
+# show debug statements
+export(bool) var debug = true
 
 export(String) var _startNode = "Start"
 
@@ -19,14 +20,11 @@ export(NodePath) var _variableStorage
 
 export(NodePath) var _displayInterface
 
-export(bool) var _showTokens = false setget set_tokens
-export(bool) var _printSyntaxTree = false setget set_ast
 export(String) var locale = "en_US" setget set_locale
 
-export(String, DIR) var filepath = "" setget set_filepath
+# String is a path to a PNG file in the global filesystem.
+export(Resource) var _compiledYarnProgram setget set_program
 
-# show debug statements
-export(bool) var debug = true
 
 var _stringTable : Dictionary = {}#localization support to come
 
@@ -48,10 +46,7 @@ var commandHandlers :  Dictionary = {} #funcRef map for text commands
 
 func _ready():
 	if Engine.editor_hint:
-		#connect("script_changed",self,"set_file")
-		if filepath.empty():
-			set_filepath(get_tree().edited_scene_root.filename.get_base_dir())
-		pass 
+		pass
 	else:
 		var YarnDialogue = load("res://addons/gdyarn/core/dialogue.gd")
 		_dialogue = YarnDialogue.new(get_node(_variableStorage))
@@ -62,27 +57,29 @@ func _ready():
 		_dialogue.get_vm().dialogueCompleteHandler = funcref(self,"_handle_dialogue_complete")
 		_dialogue.get_vm().nodeStartHandler = funcref(self,"_handle_node_start")
 
-		_compiledYarnProgram._load_compiled_program()
-		var program = _compiledYarnProgram.program
-		_stringTable = program.yarnStrings
+		var program = _compiledYarnProgram._load_compiled_program()
+		if program:
+			_stringTable = program.yarnStrings
 
-		_dialogue.set_program(program)
+			_dialogue.set_program(program)
 
-		display = get_node(_displayInterface)
+			display = get_node(_displayInterface)
 
-		display._dialogue = _dialogue
-		display._dialogueRunner = self
+			display._dialogue = _dialogue
+			display._dialogueRunner = self
 
-		if(_autoStart):
-			start(_startNode)
+			if(_autoStart):
+				start(_startNode)
 
-func set_tokens(value):
-	_showTokens = value
-	emit_signal("debug_changed",_showTokens,_printSyntaxTree)
 
-func set_ast(value):
-	_printSyntaxTree = value
-	emit_signal("debug_changed",_showTokens,_printSyntaxTree)
+func _compile_programs(showTokens : bool, printTree: bool):
+	if !_compiledYarnProgram:
+		printerr("Unable to compile programs. Missing CompiledYarnProgram resource in YarnRunner.")
+		return
+	var program = _compiledYarnProgram._compile_programs(showTokens,printTree)
+	_compiledYarnProgram._save_compiled_program(program)
+	pass
+
 
 func set_locale(value):
 	if value in TranslationServer.get_loaded_locales():
@@ -91,26 +88,14 @@ func set_locale(value):
 	else:
 		printerr("[%s] is not a valid locale id.")
 
-func set_filepath(path):
-	filepath = path
-	if _compiledYarnProgram:
-		emit_signal("path_changed", path)
-
 func set_program(program):
 	_compiledYarnProgram = program
-	if program && program.has_method("_load_program"):
-
-		_compiledYarnProgram.showTokens = _showTokens
-		_compiledYarnProgram.printSyntax = _printSyntaxTree
-		_compiledYarnProgram.path = filepath
-		_compiledYarnProgram.locale = locale
-		connect("debug_changed",_compiledYarnProgram,"_debug_changed")
-		connect("path_changed",_compiledYarnProgram,"_set_path")
-		connect("locale_changed",_compiledYarnProgram,"_set_locale")
-	elif program && !program.has_method("_load_program"):
+	if program && !program.has_method("_load_program"):
 		# if its the wrong type of resource then we
 		# dont load anything
 		_compiledYarnProgram = null
+		printerr("Program Resource must be of type CompiledYarnProgram!")
+
 
 func _process(delta):
 	if !Engine.editor_hint:

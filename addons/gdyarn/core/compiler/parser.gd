@@ -84,7 +84,12 @@ class ParseNode:
 		return null
 
 	func tab(indentLevel : int , input : String,newLine : bool = true)->String:
-		return ("%*s| %s%s"% [indentLevel*2,"",input,("" if !newLine else "\n")]) 
+		var tabPrecursor = ""
+		var indentSpacing= 3
+		for i in range(indentLevel):
+			tabPrecursor+="|%*s"%[indentSpacing,""]
+
+		return ("%*s %s%s"% [+indentLevel,tabPrecursor,input,("" if !newLine else "\n")])
 		
 	
 	func set_parent(parent):

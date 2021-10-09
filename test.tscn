@@ -8,9 +8,9 @@
 
 [sub_resource type="Resource" id=1]
 script = ExtResource( 5 )
+_programName = "compiled_yarn_program"
+_directory = "res://"
 _yarnPrograms = [ "res://addons/gdyarn/examples/example1.yarn" ]
-_program_name = "compiled_yarn_program"
-_compile = false
 
 [node name="Node2D" type="Node2D"]
 
@@ -32,8 +32,8 @@ __meta__ = {
 
 [node name="YarnRunner" type="Node" parent="."]
 script = ExtResource( 2 )
-_compiledYarnProgram = SubResource( 1 )
+debug = false
 _autoStart = true
 _variableStorage = NodePath("../storage")
 _displayInterface = NodePath("../TestDisplay")
-filepath = "res://"
+_compiledYarnProgram = SubResource( 1 )

@@ -32,10 +32,9 @@ func _init():
 static func export_program(program,filePath):
 	var file := File.new()
 
-	var stringsPath = "%s%s.strings" % [filePath.get_base_dir(),filePath.get_basename()]
+	var stringsPath = "%s%s.strings" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename()]
 	var lineInfos = program.yarnStrings
 	var result : Array = _serialize_lines(lineInfos)
-
 	program._lineInfos = result[0]
 	var strings : Array = result[1]
 
@@ -259,20 +258,15 @@ static func _load_operand(operand):
 
 #combine all the programs in the provided array
 static func combine_programs(programs : Array = []):
-	print("combine programs called")
 	if programs.empty():
 		printerr("no programs to combine - you failure")
 		return null
 
 	var YarnProgram = load("res://addons/gdyarn/core/program/program.gd")
 	var p = YarnProgram.new()
-
-	print("new program yarnnodes = %s" % p.yarnNodes.size())
-
 	for program in programs:
 		for nodeKey in program.yarnNodes.keys():
 			if p.has_yarn_node(nodeKey):
-				print("programs.size = %s" % programs.size())
 				printerr("Program with duplicate node names %s "% nodeKey)
 				return null
 			p.yarnNodes[nodeKey] = program.yarnNodes[nodeKey]

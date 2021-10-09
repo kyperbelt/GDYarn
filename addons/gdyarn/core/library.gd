@@ -1,5 +1,6 @@
 extends Object
 
+
 const FunctionInfo = preload("res://addons/gdyarn/core/function_info.gd")
 
 var functions : Dictionary = {}# String , FunctionInfo

@@ -109,13 +109,16 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 		var lexer = Lexer.new()
 
 		var tokens : Array = lexer.tokenize(body)
+		lexer.free()
+
 		if(showTokens):
-			print_tokens(tokens)
+			print_tokens(title,tokens)
 		var parser = Parser.new(tokens)
 
 		var parserNode = parser.parse_node()
 		if printTree:
 			print(parserNode.tree_string(0))
+		parser.free()
 
 		parserNode.name = title
 		parsedNodes.append(parserNode)
@@ -124,6 +127,7 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 
 	#--- End parsing nodes---
 
+
 	#compile nodes
 	for node in parsedNodes:
 		compiler.compile_node(program,node)
@@ -131,6 +135,7 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 	merge_dir(program.yarnStrings,compiler._stringTable)
 			
 
+	compiler.free()
 	return 0
 
 
@@ -491,11 +496,9 @@ func emit_error(error : int)->void:
 	_errors |= _lastError
 
 
-static func print_tokens(tokens:Array=[]):
-	print("showing tokens i guess")
+static func print_tokens(nodeName : String,tokens:Array=[]):
 	var list : PoolStringArray = []
-	list.append("\n")
 	for token in tokens:
-		list.append("%s (%s line %s)\n"%[YarnGlobals.token_type_name(token.type),token.value,token.lineNumber])
-	print("TOKENS:")
+		list.append("\t%s (%s line %s)\n"%[YarnGlobals.token_type_name(token.type),token.value,token.lineNumber])
+	print("Node[%s] Tokens:" % nodeName)
 	print(list.join("")) 
