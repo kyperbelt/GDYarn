@@ -288,7 +288,7 @@ func generate_custom_command(node,command):
 # \#line:number
 func generate_line(node,statement,line:String):
 	#print("generating line")
-	#do something g with line tags?? maybe someday
+	#TODO do something g with line tags?? maybe someday
 	
 	var num : String = register_string(line,node.nodeName,"",statement.lineNumber,[]);
 	emit(YarnGlobals.ByteCode.RunLine,node,[Operand.new(num)])

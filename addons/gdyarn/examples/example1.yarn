@@ -20,7 +20,7 @@ title: SecondNode
 tags: 
 position: 678.16,263.66
 ---
-sweet - Now we are in the Second node
+sweet - Now we are in the Second Node and visited is equal to {$visited}!
 ->this one only shows when Visit count of first node is 1 <<if $visited == 1>>
 ->This only options is showing because cat variable is true <<if $cat == true>>
     ok then I guess cat is true

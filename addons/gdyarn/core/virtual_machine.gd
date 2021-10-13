@@ -264,13 +264,13 @@ func run_instruction(instruction)->bool:
 		YarnGlobals.ByteCode.PushVariable:
 			#get content of variable and push to stack
 			var name : String = instruction.operands[0].value
-			var loaded = _dialogue._variableStorage.get_value(name)
+			var loaded = _dialogue._variableStorage._get_value_(name)
 			_state.push_value(loaded)
 		YarnGlobals.ByteCode.StoreVariable:
 			#store top stack value to variable
 			var top = _state.peek_value()
 			var destination : String = instruction.operands[0].value
-			_dialogue._variableStorage.set_value(destination,top)
+			_dialogue._variableStorage._set_value_(destination,top)
 				
 		YarnGlobals.ByteCode.Stop:
 			#stop execution and repost it

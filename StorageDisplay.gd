@@ -13,10 +13,6 @@ func _ready():
 func _process(_delta):
 	strings.resize(0)
 	strings.append("Stored Variables:\n")
-	for key in storage.variables.keys():
-		strings.append("\t%s : %s \n"%[key,storage.variables[key].as_string()])
+	for key in storage.var_names():
+		strings.append("\t%s : %s \n"%[key,storage.get_value(key)])
 	text = strings.join("");
-
-
-
-
