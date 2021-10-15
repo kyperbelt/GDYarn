@@ -91,6 +91,14 @@ enum TokenType {
 	OptionDelimit, # |
 	OptionEnd, # ]]
 
+	# format functions are proccessed further in the compiler
+	FormatFunctionStart, # [
+	FormatFunctionEnd,   # ]
+
+	# for inline Expressions
+	ExpressionFunctionStart, # {
+	ExpressionFunctionEnd,    # }
+
 	#15 Command types (specially recognised command word)
 	IfToken, ElseIf, ElseToken, EndIf, Set,
 
@@ -188,7 +196,7 @@ static func merge_dir(target, patch):
 
 
 #same as top one woops
-func token_name(type)->String:
+static func token_name(type)->String:
 	var string : String = ""
 	
 	for key in TokenType.keys():

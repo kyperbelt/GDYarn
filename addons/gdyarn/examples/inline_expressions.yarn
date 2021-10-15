@@ -3,8 +3,14 @@ tags:
 colorID: 3
 position: 332,79
 ---
-<<set $testVar=5 >>
+// the place in a race for example - this will test ordinal format function
+<<set $place = (3-(3+2))>>
+// the next few variables will be used in pluralisation testing
+// the number of apples I have
+<<set $apples = $place>>
 
-the variable testBar is equal to $testBar
-
+// expexted result - "I participated in a race and cam in 5th place."
+// I participated in a [color=#ff00ff]race[/color] and came in {$place}[ordinal {$place} one="st" two="nd" few="rd" other="th"] place.
+// expected result - "The tree only has 2 apples!"
+// The tree only has [plural {$apples} one="one apple" other="% apples"]!
 ===

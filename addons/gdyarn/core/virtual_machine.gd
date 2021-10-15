@@ -204,6 +204,7 @@ func run_instruction(instruction)->bool:
 			_state.push_value(instruction.operands[0].value)
 		YarnGlobals.ByteCode.PushNumber:
 			#push number to stack
+
 			_state.push_value(instruction.operands[0].value)
 		YarnGlobals.ByteCode.PushBool:
 			#push boolean to stack
@@ -256,6 +257,7 @@ func run_instruction(instruction)->bool:
 					params.push_front(_state.pop_value())
 
 				result = function.invoke(params)
+				print("function[%s] result[%s]" %[functionName, result._to_string()])
 
 			if function.returnsValue:
 				_state.push_value(result)

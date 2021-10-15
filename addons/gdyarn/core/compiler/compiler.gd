@@ -58,10 +58,11 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 	if !headerSep.search(source):
 		printerr("Error parsing yarn input : No headers found")
 		return -1 #TODO: return more specific error code
-	
+
 	var lineNumber: int = 0 
 	
-	var sourceLines : Array = source.split('\n',false)
+	var sourceLines : Array = source.split('\n',true)
+	# printerr("source lines %s" % sourceLines.size())
 	for i in range(sourceLines.size()):
 		sourceLines[i] = sourceLines[i].strip_edges(false,true)
 
@@ -111,7 +112,7 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 		var tokens : Array = lexer.tokenize(body)
 		lexer.free()
 
-		if(showTokens):
+		if showTokens:
 			print_tokens(title,tokens)
 		var parser = Parser.new(tokens)
 
@@ -499,6 +500,6 @@ func emit_error(error : int)->void:
 static func print_tokens(nodeName : String,tokens:Array=[]):
 	var list : PoolStringArray = []
 	for token in tokens:
-		list.append("\t%s (%s line %s)\n"%[YarnGlobals.token_type_name(token.type),token.value,token.lineNumber])
+		list.append("\t [%14s] %s (%s line %s)\n"%[token.lexerState,YarnGlobals.token_type_name(token.type),token.value,token.lineNumber])
 	print("Node[%s] Tokens:" % nodeName)
 	print(list.join("")) 

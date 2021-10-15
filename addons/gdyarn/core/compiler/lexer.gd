@@ -6,7 +6,6 @@ const FORWARD_SLASH : String = "/"
 const LINE_SEPARATOR : String = "\n"
 
 const BASE : String = "base"
-const DASH : String = "-"
 const COMMAND : String = "command"
 const LINK : String = "link"
 const SHORTCUT : String = "shortcut"
@@ -14,8 +13,8 @@ const TAG : String = "tag"
 const EXPRESSION : String = "expression"
 const ASSIGNMENT : String = "assignment"
 const OPTION : String = "option"
-const OR : String = "or"
 const DESTINATION : String = "destination"
+const FORMAT_FUNCTION : String = "format"
 
 var WHITESPACE : String = "\\s*"
 
@@ -35,9 +34,9 @@ func create_states():
 	var patterns : Dictionary = {}
 	patterns[YarnGlobals.TokenType.Text] = ".*"
 
-	patterns[YarnGlobals.TokenType.Number] = "\\-?[0-9]+(\\.[0-9+])?"
+	patterns[YarnGlobals.TokenType.Number] = "\\-?[0-9]+(\\.[0-9]+)?"
 	patterns[YarnGlobals.TokenType.Str] = "\"([^\"\\\\]*(?:\\.[^\"\\\\]*)*)\""
-	patterns[YarnGlobals.TokenType.TagMarker] = "\\#"
+	patterns[YarnGlobals.TokenType.TagMarker] = "(#[a-zA-Z]+:)"
 	patterns[YarnGlobals.TokenType.LeftParen] = "\\("
 	patterns[YarnGlobals.TokenType.RightParen] =  "\\)"
 	patterns[YarnGlobals.TokenType.EqualTo] = "(==|is(?!\\w)|eq(?!\\w))"
@@ -70,6 +69,10 @@ func create_states():
 	patterns[YarnGlobals.TokenType.OptionStart] = "\\[\\["
 	patterns[YarnGlobals.TokenType.OptionEnd] = "\\]\\]"
 	patterns[YarnGlobals.TokenType.OptionDelimit] = "\\|"
+	patterns[YarnGlobals.TokenType.ExpressionFunctionStart] = "\\{"
+	patterns[YarnGlobals.TokenType.ExpressionFunctionEnd]   = "\\}"
+	patterns[YarnGlobals.TokenType.FormatFunctionStart]   = "(?<!\\[)\\[(?!\\[)"
+	patterns[YarnGlobals.TokenType.FormatFunctionEnd]   = "\\]"
 	patterns[YarnGlobals.TokenType.Identifier] = "[a-zA-Z0-9_:\\.]+"
 	patterns[YarnGlobals.TokenType.IfToken] = "if(?!\\w)"
 	patterns[YarnGlobals.TokenType.ElseToken] = "else(?!\\w)"
@@ -79,20 +82,28 @@ func create_states():
 	patterns[YarnGlobals.TokenType.ShortcutOption] = "\\-\\>\\s*"
 
 	#compound states
-	var shortcut_option : String= SHORTCUT + DASH + OPTION
-	var shortcut_option_tag : String = shortcut_option + DASH + TAG
-	var command_or_expression : String= COMMAND + DASH + OR + DASH + EXPRESSION
-	var link_destination : String = LINK + DASH + DESTINATION
+	var shortcut_option : String= SHORTCUT + "-" + OPTION
+	var shortcut_option_tag : String = shortcut_option + "-" + TAG
+	var command_or_expression : String= COMMAND + "-" + "or" + "-" + EXPRESSION
+	var link_destination : String = LINK + "-" + DESTINATION
+	var format_expression: String = FORMAT_FUNCTION + "-" + EXPRESSION
+	var inline_expression: String = "inline" + "-" + EXPRESSION
+
+
 
 	_states = {}
 
 	_states[BASE] = LexerState.new(patterns)
-	_states[BASE].add_transition(YarnGlobals.TokenType.BeginCommand,COMMAND,true) 
+	_states[BASE].add_transition(YarnGlobals.TokenType.BeginCommand,COMMAND,true)
+	_states[BASE].add_transition(YarnGlobals.TokenType.ExpressionFunctionStart,inline_expression,true)
+	_states[BASE].add_transition(YarnGlobals.TokenType.FormatFunctionStart,FORMAT_FUNCTION,true)
 	_states[BASE].add_transition(YarnGlobals.TokenType.OptionStart,LINK,true) 
 	_states[BASE].add_transition(YarnGlobals.TokenType.ShortcutOption,shortcut_option) 
 	_states[BASE].add_transition(YarnGlobals.TokenType.TagMarker,TAG,true) 
 	_states[BASE].add_text_rule(YarnGlobals.TokenType.Text)
 
+	#TODO: FIXME - Tags are not being proccessed properly this way. We must look for the format #{identifier}:{value}
+	#              Possible solution is to add more transitions
 	_states[TAG] = LexerState.new(patterns)
 	_states[TAG].add_transition(YarnGlobals.TokenType.Identifier,BASE)
 
@@ -128,34 +139,24 @@ func create_states():
 	_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.MultiplyAssign, EXPRESSION)
 	_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.DivideAssign, EXPRESSION)
 
+	_states[FORMAT_FUNCTION] = LexerState.new(patterns)
+	_states[FORMAT_FUNCTION].add_transition(YarnGlobals.TokenType.FormatFunctionEnd,BASE,true)
+	_states[FORMAT_FUNCTION].add_transition(YarnGlobals.TokenType.ExpressionFunctionStart,format_expression,true)
+	_states[FORMAT_FUNCTION].add_text_rule(YarnGlobals.TokenType.Text)
+
+
+	_states[format_expression] = LexerState.new(patterns)
+	_states[format_expression].add_transition(YarnGlobals.TokenType.ExpressionFunctionEnd,FORMAT_FUNCTION)
+	form_expression_state(_states[format_expression])
+
+	_states[inline_expression] = LexerState.new(patterns)
+	_states[inline_expression].add_transition(YarnGlobals.TokenType.ExpressionFunctionEnd,BASE)
+	form_expression_state(_states[inline_expression])
+
 	_states[EXPRESSION] = LexerState.new(patterns)
 	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.EndCommand, BASE)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Number)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Str)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.LeftParen)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.RightParen)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.EqualTo)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.EqualToOrAssign)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.NotEqualTo)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.GreaterThanOrEqualTo)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.GreaterThan)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.LessThanOrEqualTo)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.LessThan)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Add)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Minus)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Multiply)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Divide)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Modulo)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.And)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Or)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Xor)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Not)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Variable)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Comma)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.TrueToken)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.FalseToken)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.NullToken)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.Identifier)
+	# _states[EXPRESSION].add_transition(YarnGlobals.TokenType.FormatFunctionEnd,BASE)
+	form_expression_state(_states[EXPRESSION])
 
 	_states[LINK] = LexerState.new(patterns)
 	_states[LINK].add_transition(YarnGlobals.TokenType.OptionEnd, BASE, true)
@@ -172,6 +173,35 @@ func create_states():
 		_states[stateKey].stateName = stateKey
 
 	pass
+
+func form_expression_state(expressionState):
+	expressionState.add_transition(YarnGlobals.TokenType.Number)
+	expressionState.add_transition(YarnGlobals.TokenType.Str)
+	expressionState.add_transition(YarnGlobals.TokenType.LeftParen)
+	expressionState.add_transition(YarnGlobals.TokenType.RightParen)
+	expressionState.add_transition(YarnGlobals.TokenType.EqualTo)
+	expressionState.add_transition(YarnGlobals.TokenType.EqualToOrAssign)
+	expressionState.add_transition(YarnGlobals.TokenType.NotEqualTo)
+	expressionState.add_transition(YarnGlobals.TokenType.GreaterThanOrEqualTo)
+	expressionState.add_transition(YarnGlobals.TokenType.GreaterThan)
+	expressionState.add_transition(YarnGlobals.TokenType.LessThanOrEqualTo)
+	expressionState.add_transition(YarnGlobals.TokenType.LessThan)
+	expressionState.add_transition(YarnGlobals.TokenType.Add)
+	expressionState.add_transition(YarnGlobals.TokenType.Minus)
+	expressionState.add_transition(YarnGlobals.TokenType.Multiply)
+	expressionState.add_transition(YarnGlobals.TokenType.Divide)
+	expressionState.add_transition(YarnGlobals.TokenType.Modulo)
+	expressionState.add_transition(YarnGlobals.TokenType.And)
+	expressionState.add_transition(YarnGlobals.TokenType.Or)
+	expressionState.add_transition(YarnGlobals.TokenType.Xor)
+	expressionState.add_transition(YarnGlobals.TokenType.Not)
+	expressionState.add_transition(YarnGlobals.TokenType.Variable)
+	expressionState.add_transition(YarnGlobals.TokenType.Comma)
+	expressionState.add_transition(YarnGlobals.TokenType.TrueToken)
+	expressionState.add_transition(YarnGlobals.TokenType.FalseToken)
+	expressionState.add_transition(YarnGlobals.TokenType.NullToken)
+	expressionState.add_transition(YarnGlobals.TokenType.Identifier)
+
 
 func tokenize(text:String)->Array:
 	
@@ -311,8 +341,9 @@ func tokenize_line(line:String, lineNumber : int)->Array:
 		var lastWhiteSpace : RegExMatch = whitespace.search(line,column)
 		if lastWhiteSpace:
 			column += lastWhiteSpace.get_string().length()
-		
-	
+
+	if tokenStack.size() >= 1 && tokenStack.front().type == YarnGlobals.TokenType.Text:
+		tokenStack.push_front(Token.new(YarnGlobals.TokenType.EndOfLine,_currentState,lineNumber,column,"break"))
 	tokenStack.invert()
 
 	return tokenStack
@@ -330,8 +361,7 @@ func line_indentation(line:String)->int:
 
 func enter_state(state:LexerState):
 	_currentState = state;
-	if _currentState.track_indent:
-		_shouldTrackIndent = true
+	_shouldTrackIndent = _currentState.track_indent
 
 class Token:
 	var type : int
@@ -353,7 +383,7 @@ class Token:
 		self.value = value
 
 	func _to_string():
-		return "%s (%s) at %s:%s (state: %s)" % [YarnGlobals.token_type_name(type),value,lineNumber,column,lexerState]
+		return "%s (%s) at %s:%s (state: %s)" % [YarnGlobals.token_name(type),value,lineNumber,column,lexerState]
 	
 
 class LexerState:

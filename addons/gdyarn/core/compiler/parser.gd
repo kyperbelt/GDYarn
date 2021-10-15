@@ -45,8 +45,14 @@ func expect_symbol(tokenTypes:Array = [])->Lexer.Token:
 	for type in tokenTypes:
 		if t.type == type:
 			return t
-	
-	printerr("unexpexted token: expected[ %s ] but got [ %s ]"% (tokenTypes+[t.type]))
+	var expectedTypes:String = " "
+
+	for tokenType in tokenTypes:
+		expectedTypes+=YarnGlobals.token_type_name(tokenType) +" "
+	# expectedTypes+= ""
+
+
+	printerr("unexpected token: Expexted [%s] but got [ %s ] @(%s,%s)"% [expectedTypes,YarnGlobals.token_type_name(t.type),t.lineNumber,t.column])
 	return null
 
 static func tab(indentLevel : int , input : String,newLine : bool = true)->String:
@@ -130,6 +136,72 @@ class YarnNode extends ParseNode:
 class Header extends ParseNode:
 	pass
 
+class InlineExpression extends ParseNode:
+	var expression : ExpressionNode
+
+	func _init(parent:ParseNode, parser).(parent,parser):
+		parser.expect_symbol([YarnGlobals.TokenType.ExpressionFunctionStart])
+		expression = ExpressionNode.parse(self,parser);
+		parser.expect_symbol([YarnGlobals.TokenType.ExpressionFunctionEnd])
+
+	static func can_parse(parser):
+		return parser.next_symbol_is([YarnGlobals.TokenType.ExpressionFunctionStart])
+
+	#TODO make tree string nicer
+	#     with added information about the expression
+	func tree_string(indentLevel : int)->String:
+		return "InlineExpression:"
+
+
+
+
+class FormatFunction extends ParseNode:
+	var format_text : String = ""
+	var expression_value : InlineExpression
+
+	func _init(parent:ParseNode, parser).(parent,parser):
+		parser.expect_symbol([YarnGlobals.TokenType.FormatFunctionStart])
+
+		while !parser.next_symbol_is([YarnGlobals.TokenType.FormatFunctionEnd]):
+			if parser.next_symbol_is([YarnGlobals.TokenType.Text]):
+				format_text += parser.expect_symbol().value
+
+			if InlineExpression.can_parse(parser):
+				expression_value = InlineExpression.new(self, parser)
+		parser.expect_symbol()
+
+	static func can_parse(parser):
+		return parser.next_symbol_is([YarnGlobals.TokenType.FormatFunctionStart])
+
+	#TODO Make format prettier and add more information
+	func tree_string(indentLevel : int)->String:
+		return "FormatFucntion"
+
+class LineNode extends ParseNode:
+	var line_text : String
+	#TODO: FIXME: right now we are putting the formatfunctions and inline expressions in the same
+	#             list but if at some point we want to stronly type our sub list we need to make a new
+	#             parse node that can have either an InlineExpression or a FunctionFormat
+	#             .. This is a consideration for Godot4.x
+	var substitutions : Array = [] # of type <InlineExpression |& FormatFunction>
+
+	func _init(parent:ParseNode,parser).(parent,parser):
+
+		while !parser.next_symbol_is([YarnGlobals.TokenType.EndOfLine]):
+			if FormatFunction.can_parse(parser):
+				var ff = FormatFunction.new(self,parser)
+				line_text+="{%d}"%substitutions.size()
+				substitutions.append(ff)
+			elif InlineExpression.can_parse(parser):
+				var ie = InlineExpression.new(self,parser)
+				line_text+="{%d}" % substitutions.size()
+				substitutions.append(ie)
+			else:
+				line_text += parser.expect_symbol([YarnGlobals.TokenType.Text]).value
+
+
+	func tree_string(indentLevel : int)->String:
+		return "Line: (%s)[%d]" %[line_text,substitutions.size()]
 
 class Statement extends ParseNode:
 	var Type = YarnGlobals.StatementTypes
@@ -141,9 +213,11 @@ class Statement extends ParseNode:
 	var assignment : Assignment 
 	var shortcutOptionGroup : ShortcutOptionGroup
 	var customCommand : CustomCommand
-	var line : String
+	var line : LineNode
 
 	func _init(parent:ParseNode,parser).(parent,parser):
+
+
 
 		if Block.can_parse(parser):
 			block  = Block.new(self,parser)
@@ -164,8 +238,11 @@ class Statement extends ParseNode:
 			customCommand = CustomCommand.new(self,parser)
 			type = Type.CustomCommand
 		elif parser.next_symbol_is([YarnGlobals.TokenType.Text]):
-			line = parser.expect_symbol([YarnGlobals.TokenType.Text]).value
+			# line = parser.expect_symbol([YarnGlobals.TokenType.Text]).value
+			# type = Type.Line
+			line = LineNode.new(self,parser)
 			type = Type.Line
+			parser.expect_symbol([YarnGlobals.TokenType.EndOfLine])
 		else:
 			printerr("expected a statement but got %s instead. (probably an inbalanced if statement)" % parser.tokens().front()._to_string())
 		
@@ -197,7 +274,7 @@ class Statement extends ParseNode:
 			Type.CustomCommand:
 				info.append(customCommand.tree_string(indentLevel))
 			Type.Line:
-				info.append(tab(indentLevel,"Line: %s"%line))
+				info.append(tab(indentLevel,line.tree_string(indentLevel)))
 			_:
 				printerr("cannot print statement")
 
@@ -553,7 +630,7 @@ class ValueNode extends ParseNode:
 				printerr("%s, Invalid token type" % t.name)
 
 	func tree_string(indentLevel : int)->String:
-		return tab(indentLevel, "%s"%value.value())
+		return tab(indentLevel, "<%s>%s"%[value.type,value.value()])
 
 		
 #Expressions encompass a wide range of things like:
@@ -698,6 +775,7 @@ class ExpressionNode extends ParseNode:
 			elif next.type == YarnGlobals.TokenType.LeftParen:
 				#entered parenthesis sub expression
 				opStack.push_back(next)
+
 			elif next.type == YarnGlobals.TokenType.RightParen:
 				#leaving sub expression
 				# resolve order of operations
@@ -708,7 +786,7 @@ class ExpressionNode extends ParseNode:
 				
 				
 				opStack.pop_back()
-				if opStack.back().type == YarnGlobals.TokenType.Identifier:
+				if !opStack.empty() && opStack.back().type == YarnGlobals.TokenType.Identifier:
 					#function call
 					#last token == left paren this == no params
 					#else 

@@ -13,10 +13,13 @@ var boolean : bool = false
 
 
 func _init(value=NANI):
-	if typeof(value) == TYPE_OBJECT && value.get_script() == self.get_script():
+
+	if typeof(value) == TYPE_OBJECT && value.has_method("as_number"):
 		if value.type == YarnGlobals.ValueType.Variable:
 			self.type = value.type
 			self.variable = value.variable
+		else:
+			set_value(value.value())
 	else:
 		set_value(value)
 	
@@ -60,18 +63,23 @@ func set_value(value):
 	
 	if value == null || (typeof(value) == TYPE_STRING && value == NANI):
 		type = YarnGlobals.ValueType.Nullean
+		printerr("NULLEAN VALUE ",value)
 		return
 
 	match typeof(value):
 		TYPE_INT,TYPE_REAL:
 			type = YarnGlobals.ValueType.Number
 			number = value
+
+			printerr("NUMBER VALUE ",value)
 		TYPE_STRING:
 			type = YarnGlobals.ValueType.Str
 			string = value
+			printerr("String VALUE ",value)
 		TYPE_BOOL:
 			type = YarnGlobals.ValueType.Boolean
 			boolean = value
+			printerr("bool VALUE ",value)
 		
 
 #operations >> 
@@ -82,6 +90,7 @@ func add(other):
 		return get_script().new("%s%s"%[self.value(),other.value()])
 	if self.type == YarnGlobals.ValueType.Number && other.type == YarnGlobals.ValueType.Number:
 		return get_script().new(self.number + other.number)
+	printerr("NOOOO WE ARE NULLLL")
 	return null
 
 func equals(other)->bool:
@@ -97,6 +106,7 @@ func sub(other):
 		return get_script().new(str(value()).replace(str(other.value()),""))
 	if self.type == YarnGlobals.ValueType.Number && other.type == YarnGlobals.ValueType.Number:
 		return get_script().new(self.number - other.number)
+	printerr("NOOOO WE ARE NULLLL")
 	return null
 
 #multiply
