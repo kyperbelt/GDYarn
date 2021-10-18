@@ -223,6 +223,7 @@ class FormatFunctionData:
 	func _error(message : String):
 		error = message
 		return self
+
 func expand_format_functions(input:String, locale : String)->String:
 	# printerr("locale : %s" % locale)
 	var formattedLine:String = input
@@ -316,7 +317,7 @@ func parse_function(segment : String) -> FormatFunctionData:
 
 	formatFunctionData.name = validFunction.get_string()
 
-	formatFunctionData.value = (values[0] as RegExMatch).get_string()
+	formatFunctionData.value = (values[0] as RegExMatch).get_string().replace("\"","")
 
 	#TODO add position check to
 	# # param[i].end must be < value[i].start

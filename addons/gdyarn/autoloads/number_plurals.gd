@@ -45,13 +45,15 @@ func get_plural_case(locale:String, value : float)->int:
 
 # get the ordinal plural case depending on the locale passed in
 func __get_ordinal_case_49(value : float)->int:
-	var v = abs(value)
+	var v := int(ceil(abs(value)))
 
-	if (fmod(v,10) == 1) && !(fmod(v,100) == 11):
+	# printerr("v:%s value:%s" % [v, value])
+
+	if (v % 10 == 1) && !( v % 100 == 11):
 		return PluralCase.One
-	if (fmod(v,10) == 2) && !(fmod(v,100) == 12):
+	if (v % 10 == 2) && !(v % 100 == 12):
 		return PluralCase.Two
-	if (fmod(10,3) == 3) && !(fmod(v,100) == 13):
+	if (v % 10 == 3) && !(v % 100 == 13):
 		return PluralCase.Few
 
 	return PluralCase.Other
