@@ -62,7 +62,7 @@ func lor(param1,param2):
     return param1.as_bool() || param2.as_bool()
 
 func xor(param1,param2):
-    return param1.as_bool() != param2.as_bool()
+    return param1.xor(param2)
 
 func lnot(param1):
     return !param1.as_bool()

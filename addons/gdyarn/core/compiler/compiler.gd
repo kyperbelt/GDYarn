@@ -32,6 +32,8 @@ var _fileName : String
 var _containsImplicitStringTags : bool
 var _labelCount : int = 0
 
+var error = OK
+
 #<String, LineInfo>
 var _stringTable : Dictionary = {}
 var _stringCount : int = 0
@@ -57,7 +59,7 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 	#check for atleast one node start
 	if !headerSep.search(source):
 		printerr("Error parsing yarn input : No headers found")
-		return -1 #TODO: return more specific error code
+		return ERR_FILE_UNRECOGNIZED
 
 	var lineNumber: int = 0 
 	
@@ -109,7 +111,10 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 		body = bodyLines.join('\n')
 		var lexer = Lexer.new()
 
-		var tokens : Array = lexer.tokenize(body)
+		var tokens : Array = lexer.tokenize(body,1)
+		if lexer.error != OK:
+			printerr("Failed to tokenize the Node[%s] in file: %s."%[title,filename])
+			return lexer.error
 		lexer.free()
 
 		if showTokens:
@@ -117,6 +122,10 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 		var parser = Parser.new(tokens)
 
 		var parserNode = parser.parse_node()
+		if parser.error != OK:
+			printerr("Failed to parse Node[%s] in file: %s."%[title,filename])
+			return parser.error
+
 		if printTree:
 			print(parserNode.tree_string(0))
 		parser.free()
@@ -132,12 +141,15 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 	#compile nodes
 	for node in parsedNodes:
 		compiler.compile_node(program,node)
+		if compiler.error != OK:
+			printerr("Failed to compile Node[%s] in file: %s." %[node.name,filename])
+			return compiler.error
 
 	merge_dir(program.yarnStrings,compiler._stringTable)
 			
 
 	compiler.free()
-	return 0
+	return OK
 
 
 static func merge_dir(target, patch):
@@ -146,7 +158,8 @@ static func merge_dir(target, patch):
 
 func compile_node(program:YarnProgram,parsedNode)->void:
 	if program.yarnNodes.has(parsedNode.name):
-		emit_error(DUPLICATE_NODES_IN_PROGRAM)
+		# emit_error(DUPLICATE_NODES_IN_PROGRAM)
+		error = ERR_ALREADY_EXISTS
 		printerr("Duplicate node in program: %s"%parsedNode.name)
 	else:
 		var nodeCompiled : YarnNode = YarnNode.new()
@@ -230,6 +243,7 @@ func emit(bytecode,node:YarnNode=_currentNode,operands:Array=[]):
 
 	if(node == null):
 		printerr("trying to emit to null node with byteCode: %s"%bytecode)
+		error = ERR_INVALID_PARAMETER
 		return;
 	node.instructions.append(instruction)
 	if bytecode == YarnGlobals.ByteCode.Label : 
@@ -266,7 +280,7 @@ func generate_statement(node,statement):
 		YarnGlobals.StatementTypes.Line:
 			generate_line(node,statement,statement.line)
 		_:
-			emit_error(ERR_COMPILATION_FAILED)
+			error = ERR_COMPILATION_FAILED
 			printerr("illegal statement type [%s]- could not generate code" % statement.type)
 
 	pass
@@ -287,14 +301,25 @@ func generate_custom_command(node,command):
 
 #compile instructions for linetags and use them 
 # \#line:number
-func generate_line(node,statement,line:String):
+func generate_line(node,statement,line):
 	#print("generating line")
 	#TODO do something g with line tags?? maybe someday
+
+	#giving me a LineNode
+	#              - line_text : String
+	#              - substitutions (inline_Expressions) : Array
+
+	var expressionCount = line.substitutions.size()
+
+	while !line.substitutions.empty():
+		var inlineExpression = line.substitutions.pop_back()
+		generate_expression(node,inlineExpression.expression)
 	
-	var num : String = register_string(line,node.nodeName,"",statement.lineNumber,[]);
-	emit(YarnGlobals.ByteCode.RunLine,node,[Operand.new(num)])
+	var num : String = register_string(line.line_text,node.nodeName,"",statement.lineNumber,[]);
+	emit(YarnGlobals.ByteCode.RunLine,node,[Operand.new(num),Operand.new(expressionCount)])
 
 
+#FIXME : add support for format functions
 func generate_shortcut_group(node,shortcutGroup):
 	# print("generating shortcutoptopn group")
 	var end : String = register_label("group_end")
@@ -427,7 +452,8 @@ func generate_assignment(node,assignment):
 				emit(YarnGlobals.ByteCode.CallFunc,node,
 					[Operand.new(YarnGlobals.token_type_name(YarnGlobals.TokenType.DivideAssign))])
 			_:
-				printerr("Unable to generate assignment")
+				printerr("Invalid assignment operator.") #FIXME add more error information
+				error = ERR_INVALID_DATA
 
 	#stack contains destination value
 	#store the top of the stack in variable
@@ -455,7 +481,9 @@ func generate_expression(node,expression):
 			#call function
 			emit(YarnGlobals.ByteCode.CallFunc,node,[Operand.new(expression.function)])
 		_:
-			printerr("no expression")
+			printerr("Unable to generate expression while compiling")
+			error = ERR_INVALID_DATA
+
 			
 	pass
 
@@ -478,6 +506,7 @@ func generate_value(node,value):
 			emit(YarnGlobals.ByteCode.PushNull,node)
 		_:
 			printerr("Unrecognized valuenode type: %s" % value.value.type)
+			error = ERR_INVALID_DATA
 
 
 #get the error flags
@@ -492,9 +521,9 @@ func clear_errors()->void:
 	_errors = NO_ERROR
 	_lastError = NO_ERROR
 
-func emit_error(error : int)->void:
-	_lastError = error
-	_errors |= _lastError
+# func emit_error(error : int)->void:
+# 	_lastError = error
+# 	_errors |= _lastError
 
 
 static func print_tokens(nodeName : String,tokens:Array=[]):

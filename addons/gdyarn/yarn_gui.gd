@@ -48,7 +48,7 @@ func _process(delta):
 		if !lineFinished:
 			emit_signal("line_finished")
 			finish_line(false)
-			textDisplay.text = _currentLine if !_currentLine.empty() else textDisplay.text
+			textDisplay.bbcode_text=( _currentLine if !_currentLine.empty() else textDisplay.bbcode_text)
 		lineFinished = true
 		
 		if _autoNext && !nextLineRequested:
@@ -61,8 +61,8 @@ func _process(delta):
 
 	if !lineFinished && textDisplay!=null:
 		var newText : String = _currentLine.substr(0,round(_currentLine.length()*(lineElapsed/totalTime)))
-		if newText!=textDisplay.text:
-			textDisplay.text = newText
+		if newText!=textDisplay.get_text():
+			textDisplay.bbcode_text = newText
 			emit_signal("text_changed")
 
 	
@@ -81,7 +81,7 @@ func feed_line(line:String)->bool:
 		textDisplay.visible = true
 		if(totalTime <= 0):
 			lineFinished = true
-			textDisplay.set_text(line)
+			textDisplay.bbcode_text=(line)
 			emit_signal("line_finished")
 	return true
 

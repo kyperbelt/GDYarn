@@ -177,6 +177,12 @@ func run_instruction(instruction)->bool:
 			#the second operand is the expression count 
 			# of format function
 			if instruction.operands.size() > 1:
+				var expressionCount = int(instruction.operands[1].value)
+
+				while expressionCount >0:
+					line.substitutions.append(_state.pop_value().as_string())
+					expressionCount-=1
+
 				pass#add format function support
 
 			var pause : int = lineHandler.call_func(line)
@@ -257,7 +263,7 @@ func run_instruction(instruction)->bool:
 					params.push_front(_state.pop_value())
 
 				result = function.invoke(params)
-				print("function[%s] result[%s]" %[functionName, result._to_string()])
+				# print("function[%s] result[%s]" %[functionName, result._to_string()])
 
 			if function.returnsValue:
 				_state.push_value(result)

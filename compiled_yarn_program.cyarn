@@ -1,5 +1,5 @@
 {
-"program_line_info": [  ],
+"program_line_info": [ [ "res://addons/gdyarn/examples/inline_expressions.yarn-Start-0", "Start", 0, "res://addons/gdyarn/examples/inline_expressions.yarn", true, [  ] ], [ "res://addons/gdyarn/examples/inline_expressions.yarn-Start-1", "Start", 0, "res://addons/gdyarn/examples/inline_expressions.yarn", true, [  ] ] ],
 "program_name": "",
 "program_nodes": [ {
 "node_instructions": [ {
@@ -12,43 +12,7 @@
 "instruction_op": 8,
 "instruction_operands": [ {
 "operand_type": 3,
-"operand_value": 3.0
-} ]
-}, {
-"instruction_op": 8,
-"instruction_operands": [ {
-"operand_type": 3,
-"operand_value": 3.0
-} ]
-}, {
-"instruction_op": 8,
-"instruction_operands": [ {
-"operand_type": 3,
 "operand_value": 2.0
-} ]
-}, {
-"instruction_op": 8,
-"instruction_operands": [ {
-"operand_type": 3,
-"operand_value": 2.0
-} ]
-}, {
-"instruction_op": 13,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "Add"
-} ]
-}, {
-"instruction_op": 8,
-"instruction_operands": [ {
-"operand_type": 3,
-"operand_value": 2.0
-} ]
-}, {
-"instruction_op": 13,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "Minus"
 } ]
 }, {
 "instruction_op": 15,
@@ -66,6 +30,42 @@
 "operand_value": "$place"
 } ]
 }, {
+"instruction_op": 8,
+"instruction_operands": [ {
+"operand_type": 3,
+"operand_value": 3.0
+} ]
+}, {
+"instruction_op": 8,
+"instruction_operands": [ {
+"operand_type": 3,
+"operand_value": 2.0
+} ]
+}, {
+"instruction_op": 13,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "Multiply"
+} ]
+}, {
+"instruction_op": 8,
+"instruction_operands": [ {
+"operand_type": 3,
+"operand_value": 2.0
+} ]
+}, {
+"instruction_op": 8,
+"instruction_operands": [ {
+"operand_type": 3,
+"operand_value": 2.0
+} ]
+}, {
+"instruction_op": 13,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "Xor"
+} ]
+}, {
 "instruction_op": 15,
 "instruction_operands": [ {
 "operand_type": 1,
@@ -74,6 +74,42 @@
 }, {
 "instruction_op": 12,
 "instruction_operands": [  ]
+}, {
+"instruction_op": 14,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "$place"
+} ]
+}, {
+"instruction_op": 14,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "$place"
+} ]
+}, {
+"instruction_op": 3,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "res://addons/gdyarn/examples/inline_expressions.yarn-Start-0"
+}, {
+"operand_type": 3,
+"operand_value": 2.0
+} ]
+}, {
+"instruction_op": 14,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "$apples"
+} ]
+}, {
+"instruction_op": 3,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "res://addons/gdyarn/examples/inline_expressions.yarn-Start-1"
+}, {
+"operand_type": 3,
+"operand_value": 1.0
+} ]
 }, {
 "instruction_op": 6,
 "instruction_operands": [  ]

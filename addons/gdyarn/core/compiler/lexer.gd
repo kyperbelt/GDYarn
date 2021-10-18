@@ -26,6 +26,7 @@ var _currentState : LexerState
 var _indentStack : Array = []
 var _shouldTrackIndent : bool = false
 
+var error = OK;
 
 func _init():
 	create_states()
@@ -89,6 +90,7 @@ func create_states():
 	var format_expression: String = FORMAT_FUNCTION + "-" + EXPRESSION
 	var inline_expression: String = "inline" + "-" + EXPRESSION
 
+	#TODO: FIXME: Add transition from shortcut options and option links into inline expressions and format functions
 
 
 	_states = {}
@@ -203,7 +205,7 @@ func form_expression_state(expressionState):
 	expressionState.add_transition(YarnGlobals.TokenType.Identifier)
 
 
-func tokenize(text:String)->Array:
+func tokenize(text:String,lineNumber)->Array:
 	
 	_indentStack.clear()
 	_indentStack.push_front(IntBoolPair.new(0,false))
@@ -216,9 +218,11 @@ func tokenize(text:String)->Array:
 	var lines : PoolStringArray = text.split(LINE_SEPARATOR)
 	lines.append("")
 
-	var lineNumber : int = 1
+	# var lineNumber : int = 1
 
 	for line in lines:
+		if error!=OK:
+			break;
 		tokens+=tokenize_line(line,lineNumber)
 		lineNumber+=1
 
@@ -259,9 +263,10 @@ func tokenize_line(line:String, lineNumber : int)->Array:
 	var column : int = indentation
 
 	var whitespace : RegEx = RegEx.new()
-	var error = whitespace.compile(WHITESPACE)
-	if error != OK:
+	var _ok = whitespace.compile(WHITESPACE)
+	if _ok != OK:
 		printerr("unable to compile regex WHITESPACE")
+		error = ERR_COMPILATION_FAILED
 		return []
 	
 	while column < freshLine.length():
@@ -322,7 +327,8 @@ func tokenize_line(line:String, lineNumber : int)->Array:
 			if rule.enterState != null && rule.enterState.length() > 0:
 
 				if !_states.has(rule.enterState):
-					printerr("State[%s] not known - line(%s) col(%s)"%[rule.enterState,lineNumber,column])
+					printerr("Tried to enter unknown State[%s] - line(%s) col(%s)"%[rule.enterState,lineNumber,column])
+					error = ERR_DOES_NOT_EXIST
 					return []
 				
 				enter_state(_states[rule.enterState])
@@ -335,7 +341,8 @@ func tokenize_line(line:String, lineNumber : int)->Array:
 			break;
 
 		if !matched:
-			printerr("expectedTokens [%s] - line(%s) col(%s)"%["refineErrors.Lexer.tokenize_line",lineNumber,column])
+			printerr("expectedTokens [%s] - line(%s) col(%s)"%[_currentState.expected_tokens_string(),lineNumber,column])
+			error = ERR_INVALID_DATA
 			return []
 
 		var lastWhiteSpace : RegExMatch = whitespace.search(line,column)
@@ -419,6 +426,12 @@ class LexerState:
 		rule.regex.compile(pattern)
 		rule.isTextRule = true
 		return rule
+
+	func expexted_tokens_string()->String:
+		var result = ""
+		for rule in rules:
+			result += "" + YarnGlobals.token_type_name(rule.tokenType)
+		return result
 
 	func contains_text_rule()->bool:
 		for rule in rules:

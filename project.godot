@@ -27,6 +27,7 @@ config/icon="res://icon.png"
 [autoload]
 
 YarnGlobals="*res://addons/gdyarn/autoloads/execution_states.gd"
+NumberPlurals="*res://addons/gdyarn/autoloads/number_plurals.gd"
 
 [editor_plugins]
 

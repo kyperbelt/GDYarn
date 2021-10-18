@@ -114,6 +114,7 @@ func add_command_handler(command:String,handler:FuncRef):
 
 func _handle_line(line):
 	var text : String =  (_stringTable.get(line.id) as LineInfo).text
+	text = text.format(line.substitutions)
 	if debug:
 		print("line: %s" %text)
 	_pass_line(text)
@@ -126,8 +127,9 @@ func consume_line():
 
 func _pass_line(lineText:String):
 	if display != null:
-		if !display.feed_line(lineText):
-			next_line = lineText
+		var formattedText = YarnGlobals.expand_format_functions(lineText,TranslationServer.get_locale())
+		if !display.feed_line(formattedText):
+			next_line = formattedText
 
 func _handle_command(command):
 	if debug:

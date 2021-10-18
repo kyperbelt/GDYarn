@@ -63,7 +63,7 @@ func set_value(value):
 	
 	if value == null || (typeof(value) == TYPE_STRING && value == NANI):
 		type = YarnGlobals.ValueType.Nullean
-		printerr("NULLEAN VALUE ",value)
+		# printerr("NULLEAN VALUE ",value)
 		return
 
 	match typeof(value):
@@ -71,65 +71,75 @@ func set_value(value):
 			type = YarnGlobals.ValueType.Number
 			number = value
 
-			printerr("NUMBER VALUE ",value)
+			# printerr("NUMBER VALUE ",value)
 		TYPE_STRING:
 			type = YarnGlobals.ValueType.Str
 			string = value
-			printerr("String VALUE ",value)
+			# printerr("String VALUE ",value)
 		TYPE_BOOL:
 			type = YarnGlobals.ValueType.Boolean
 			boolean = value
-			printerr("bool VALUE ",value)
+			# printerr("bool VALUE ",value)
 		
 
 #operations >> 
 
 #addition
 func add(other):
-	if self.type == YarnGlobals.ValueType.Str || other.type == YarnGlobals.ValueType.Str:
+	if self.type == YarnGlobals.ValueType.Str:
 		return get_script().new("%s%s"%[self.value(),other.value()])
-	if self.type == YarnGlobals.ValueType.Number && other.type == YarnGlobals.ValueType.Number:
-		return get_script().new(self.number + other.number)
-	printerr("NOOOO WE ARE NULLLL")
-	return null
+	if self.type == YarnGlobals.ValueType.Number:
+		return get_script().new(self.number + other.as_number())
+
+	return get_script().new(other.as_number() + self.as_number())
 
 func equals(other)->bool:
 	if other.get_script() != self.get_script():
 		return false
 	if other.value() != self.value():
 		return false
-	return true #refine this
+	return true
+
+func xor(other):
+	if self.type == YarnGlobals.ValueType.Number:
+		return get_script().new(pow(self.as_number(),other.as_number()))
+	return get_script().new(self.as_bool() != self.as_bool())
 
 #subtract
 func sub(other):
-	if self.type == YarnGlobals.ValueType.Str || other.type == YarnGlobals.ValueType.Str:
+	# TODO: add a distinction when subtracting numbers from a string, maybe remove x amount of characters?
+	#                        so   ("hello world!" - 5 ) -> "hello w"
+	if self.type == YarnGlobals.ValueType.Str:
 		return get_script().new(str(value()).replace(str(other.value()),""))
-	if self.type == YarnGlobals.ValueType.Number && other.type == YarnGlobals.ValueType.Number:
-		return get_script().new(self.number - other.number)
+	if self.type == YarnGlobals.ValueType.Number :
+		return get_script().new(self.number - other.as_number())
 	printerr("NOOOO WE ARE NULLLL")
-	return null
+	return get_script().new(self.as_number() - other.as_number())
+
 
 #multiply
 func mult(other):
-	if self.type == YarnGlobals.ValueType.Number && other.type == YarnGlobals.ValueType.Number:
-		return get_script().new(self.number * other.number)
-	return null
+	if self.type == YarnGlobals.ValueType.Number:
+		return get_script().new(self.number * other.as_number())
+	return get_script().new( self.as_number() * other.as_number())
 
 #division
 func div(other):
-	if self.type == YarnGlobals.ValueType.Number && other.type == YarnGlobals.ValueType.Number:
-		return get_script().new(self.number / other.number)
-	return null
+	if self.type == YarnGlobals.ValueType.Number:
+		return get_script().new(self.number / other.as_number())
+	return get_script().new(self.as_number() / other.as_number())
 
 #modulus
 func mod(other):
 	if self.type == YarnGlobals.ValueType.Number && other.type == YarnGlobals.ValueType.Number:
 		return get_script().new(self.number % other.number)
-	return null
+	return
 
 func negative():
 	if self.type == YarnGlobals.ValueType.Number: 
 		return get_script().new(-self.number)
+	if self.type == YarnGlobals.ValueType.Boolean:
+		return get_script().new(!self.as_bool())
 	return null
 
 #greater than other
@@ -155,6 +165,7 @@ func leq(other)->bool:
 	if self.type == YarnGlobals.ValueType.Number && other.type == YarnGlobals.ValueType.Number:
 		return self.number < other.number || self.equals(other)
 	return false
+
 
 
 func _to_string():

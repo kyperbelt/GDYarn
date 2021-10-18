@@ -29,8 +29,7 @@ func invoke(params:Array = []):
 		if returnsValue:
 			if length > 0:
 				var result = function.call_funcv(params)
-
-				printerr("function is returning null when it shouldnt, ", result," type of ", typeof(result))
+				# printerr("function is returning null when it shouldnt, ", result," type of ", typeof(result))
 				return Value.new(result)
 			else:
 				return Value.new(function.call_func())

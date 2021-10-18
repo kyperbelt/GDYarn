@@ -204,3 +204,126 @@ static func token_name(type)->String:
 			return key					
 	return string
 
+
+
+
+
+
+
+## FORMAT FUNCTION HANDLERS
+class FormatFunctionData:
+	var name   := ""
+	var value  := ""
+	var parameters := {}
+	var error : String = ""
+
+	func _init():
+		pass
+
+	func _error(message : String):
+		error = message
+		return self
+func expand_format_functions(input:String, locale : String)->String:
+	# printerr("locale : %s" % locale)
+	var formattedLine:String = input
+
+	# TODO FIXME: probably dont want to compile the regex patterns every time we expand
+	# 			  a format a function. Scope this up.
+	var regex = RegEx.new()
+
+	# find anything inside of square brackets ["--"]
+	regex.compile("((?<=\\[)[^\\]]*)")
+	var regexResults: Array = regex.search_all(input)
+	# print(" %d groups found in line <%s> "% [regexResults.size(), input])
+	if !regexResults.empty():
+		for regexResult in regexResults:
+			var segment = regexResult.get_string()
+			var functionResult : FormatFunctionData = parse_function(segment)
+			# print("working on string <%s>" % segment)
+			if !functionResult: # skip invalid format functions
+				continue
+
+			# display error
+			if !functionResult.error.empty():
+				formattedLine = formattedLine.replace("["+segment+"]", "<"+functionResult.error+">")
+				continue
+
+			var pcase = ""
+			# here we use our pluralisation library to get the correct results
+			match functionResult.name:
+				"select":
+					if functionResult.value in functionResult.parameters:
+						formattedLine = formattedLine.replace("["+segment+"]",functionResult.parameters[functionResult.value])
+					else:
+						formattedLine = formattedLine.replace("["+segment+"]","<%s has no seleciton>" % functionResult.value)
+				"plural":
+					pcase = NumberPlurals.plural_case_string(NumberPlurals.get_plural_case(locale, float(functionResult.value)))
+
+				"ordinal":
+					pcase = NumberPlurals.plural_case_string(NumberPlurals.get_ordinal_case(locale,float(functionResult.value)))
+
+			if !pcase.empty():
+				if pcase in functionResult.parameters:
+					formattedLine = formattedLine.replace("["+segment+"]",functionResult.parameters[pcase])
+				else:
+					formattedLine = formattedLine.replace("["+segment+"]","<%s>"%pcase)
+
+
+
+
+	return formattedLine
+
+
+#TODO FIXME: should make a parser that actually steps through the input instead of just collecting all the patterns.
+func parse_function(segment : String) -> FormatFunctionData:
+	# expexting a format function in the format:
+	#                    name "value" param1="paramValue1" param2="paramValue2"
+
+
+	# we check if its a valid function id it starts with either
+	# select | plural | ordinal
+	# TODO FIXME: same as in parse_format_functions, we should move this regex compilation so that it doesnt compile each time we are parsing a function
+	var functionValidator = RegEx.new()
+	functionValidator.compile("^(?:(?:plural)|(?:ordinal)|(?:select))")
+
+
+
+	var valuesRegex = RegEx.new()
+	valuesRegex.compile("\"[^\"]*\"") # matches all the values in the string "value"
+
+
+	var paramRegex = RegEx.new()
+	paramRegex.compile("(?<=\\s)([^\\s]*(?=(?:=\")))") # matches all params
+
+	var validFunction = functionValidator.search(segment)
+	# # if this is not a valid function then we just skip it
+	if !validFunction:
+		return null
+
+
+	# # first value in the values regex is our function value
+	# # this means that paramRegex should return valuesRegex.size()-1
+
+
+	var formatFunctionData := FormatFunctionData.new()
+
+	var values : Array = valuesRegex.search_all(segment)
+	var params : Array = paramRegex.search_all(segment)
+
+	# printerr("values:%d params:%d" %[values.size(), params.size()])
+	if params.size() != values.size()-1:
+		return formatFunctionData._error("Missmatched parameters")
+
+	formatFunctionData.name = validFunction.get_string()
+
+	formatFunctionData.value = (values[0] as RegExMatch).get_string()
+
+	#TODO add position check to
+	# # param[i].end must be < value[i].start
+
+	for i in range(1, values.size()):
+		formatFunctionData.parameters[params[i-1].get_string()] = values[i].get_string().replace("\"","").replace("%",formatFunctionData.value.replace("\"",""))
+
+
+
+	return formatFunctionData

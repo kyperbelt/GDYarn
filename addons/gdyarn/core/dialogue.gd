@@ -5,9 +5,6 @@ extends Node
 #consts
 const DEFAULT_START :String= "Start"
 
-#future format function support
-const FMF_PLACEHOLDER:String = "<VALUE PLACEHOLDER>"
-
 #classes
 
 # const StandardLibrary = preload("res://addons/gdyarn/core/libraries/standard.gd")
@@ -52,11 +49,9 @@ func _init(variableStorage):
 
 func dlog(message:String):
 	print("YARN_DEBUG : %s" % message)
-	pass
 
 func elog(message:String):
-	print("YARN_ERROR : %s" % message)
-	pass
+	printerr("YARN_ERROR : %s" % message)
 
 func is_active()->bool:
 	return get_exec_state() != YarnGlobals.ExecutionState.Stopped
@@ -147,3 +142,4 @@ func set_visited_nodes(visitedList):
 	_visitedNodeCount.clear()
 	for string in visitedList:
 		_visitedNodeCount[string] = 1
+

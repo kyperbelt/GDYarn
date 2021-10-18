@@ -5,6 +5,7 @@ const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
 
 
 var _tokens : Array = []#token
+var error = OK
 
 func _init(tokens):
 	self._tokens = tokens
@@ -39,6 +40,7 @@ func expect_symbol(tokenTypes:Array = [])->Lexer.Token:
 	if size == 0:
 		if t.type == YarnGlobals.TokenType.EndOfInput:
 			printerr("unexpected end of input")
+			error = ERR_INVALID_DATA
 			return null
 		return t
 
@@ -53,6 +55,7 @@ func expect_symbol(tokenTypes:Array = [])->Lexer.Token:
 
 
 	printerr("unexpected token: Expexted [%s] but got [ %s ] @(%s,%s)"% [expectedTypes,YarnGlobals.token_type_name(t.type),t.lineNumber,t.column])
+	error = ERR_INVALID_DATA
 	return null
 
 static func tab(indentLevel : int , input : String,newLine : bool = true)->String:
@@ -114,7 +117,8 @@ class YarnNode extends ParseNode:
 
 		self.name = name
 		while (parser.tokens().size() > 0 && 
-			  !parser.next_symbol_is([YarnGlobals.TokenType.Dedent,YarnGlobals.TokenType.EndOfInput])):
+			  !parser.next_symbol_is([YarnGlobals.TokenType.Dedent,YarnGlobals.TokenType.EndOfInput]) &&
+			  parser.error == OK):
 			statements.append(Statement.new(self,parser))
 			#print(statements.size())
 
@@ -132,7 +136,8 @@ class YarnNode extends ParseNode:
 
 		return info.join("")
 	
-
+#DEPRECATED
+# we handle header information before we beign parsing content
 class Header extends ParseNode:
 	pass
 
@@ -154,12 +159,14 @@ class InlineExpression extends ParseNode:
 
 
 
-
 class FormatFunction extends ParseNode:
+
+	# returns a format_text string as [ name "{0}" key1="value1" key2="value2" ]
 	var format_text : String = ""
 	var expression_value : InlineExpression
 
-	func _init(parent:ParseNode, parser).(parent,parser):
+	func _init(parent:ParseNode, parser,expressionCount:int).(parent,parser):
+		format_text="["
 		parser.expect_symbol([YarnGlobals.TokenType.FormatFunctionStart])
 
 		while !parser.next_symbol_is([YarnGlobals.TokenType.FormatFunctionEnd]):
@@ -168,7 +175,9 @@ class FormatFunction extends ParseNode:
 
 			if InlineExpression.can_parse(parser):
 				expression_value = InlineExpression.new(self, parser)
+				format_text +=" \"{%d}\" " % expressionCount
 		parser.expect_symbol()
+		format_text+="]"
 
 	static func can_parse(parser):
 		return parser.next_symbol_is([YarnGlobals.TokenType.FormatFunctionStart])
@@ -185,13 +194,17 @@ class LineNode extends ParseNode:
 	#             .. This is a consideration for Godot4.x
 	var substitutions : Array = [] # of type <InlineExpression |& FormatFunction>
 
+	# NOTE: If format function an inline functions are both present
+	# returns a line in the format "Some text {0} and some other {1}[format "{2}" key="value" key="value"]"
+
 	func _init(parent:ParseNode,parser).(parent,parser):
 
 		while !parser.next_symbol_is([YarnGlobals.TokenType.EndOfLine]):
 			if FormatFunction.can_parse(parser):
-				var ff = FormatFunction.new(self,parser)
-				line_text+="{%d}"%substitutions.size()
-				substitutions.append(ff)
+				var ff = FormatFunction.new(self,parser,substitutions.size())
+				if ff.expression_value != null:
+					substitutions.append(ff.expression_value)
+				line_text+=ff.format_text
 			elif InlineExpression.can_parse(parser):
 				var ie = InlineExpression.new(self,parser)
 				line_text+="{%d}" % substitutions.size()
@@ -216,8 +229,8 @@ class Statement extends ParseNode:
 	var line : LineNode
 
 	func _init(parent:ParseNode,parser).(parent,parser):
-
-
+		if parser.error != OK:
+			return
 
 		if Block.can_parse(parser):
 			block  = Block.new(self,parser)
@@ -245,7 +258,8 @@ class Statement extends ParseNode:
 			parser.expect_symbol([YarnGlobals.TokenType.EndOfLine])
 		else:
 			printerr("expected a statement but got %s instead. (probably an inbalanced if statement)" % parser.tokens().front()._to_string())
-		
+			parser.error = ERR_PARSE_ERROR
+			return
 		
 		var tags : Array = []
 
@@ -605,11 +619,12 @@ class ValueNode extends ParseNode:
 		if t == null :
 			parser.expect_symbol([YarnGlobals.TokenType.Number,
 		YarnGlobals.TokenType.Variable,YarnGlobals.TokenType.Str]) 
-		use_token(t)
+
+		use_token(t,parser)
 
 
 	#store value depedning on type
-	func use_token(t:Lexer.Token):
+	func use_token(t:Lexer.Token,parser):
 
 		match t.type:
 			YarnGlobals.TokenType.Number:
@@ -627,7 +642,8 @@ class ValueNode extends ParseNode:
 			YarnGlobals.TokenType.NullToken:
 				value = Value.new(null)
 			_:
-				printerr("%s, Invalid token type" % t.name)
+				printerr("%s, Invalid token type @[l%4d:c%4d]" % [YarnGlobals.token_name(t.type),t.lineNumber,t.column])
+				parser.error = ERR_INVALID_DATA
 
 	func tree_string(indentLevel : int)->String:
 		return tab(indentLevel, "<%s>%s"%[value.type,value.value()])
@@ -726,6 +742,8 @@ class ExpressionNode extends ParseNode:
 					var p = opStack.pop_back()
 					if p == null:
 						printerr("unbalanced parenthesis %s " % next.name)
+						parser.error = ERR_INVALID_DATA
+						return null
 						break
 					rpn.append(p)
 
@@ -735,6 +753,8 @@ class ExpressionNode extends ParseNode:
 				if parser.next_symbol_is([YarnGlobals.TokenType.RightParen,
 					YarnGlobals.TokenType.Comma]):
 					printerr("Expected Expression : %s" % parser.tokens().front().name)
+					parser.error = ERR_INVALID_DATA
+					return null
 				
 				#find the closest function on stack
 				#increment parameters
@@ -783,9 +803,11 @@ class ExpressionNode extends ParseNode:
 					rpn.append(opStack.pop_back())
 					if opStack.back() == null:
 						printerr("Unbalanced parenthasis #RightParen. Parser.ExpressionNode")
+						parser.error = ERR_INVALID_DATA
+						return null
 				
 				
-				opStack.pop_back()
+				opStack.pop_back() # pop left parenthesis
 				if !opStack.empty() && opStack.back().type == YarnGlobals.TokenType.Identifier:
 					#function call
 					#last token == left paren this == no params
@@ -858,7 +880,7 @@ class ExpressionNode extends ParseNode:
 		#we should have a single root expression left
 		#if more then we failed ---- NANI
 		if evalStack.size() != 1:
-			printerr("[%s] Error parsing expression (stack did not reduce correctly )"%first.name)
+			printerr("Error parsing expression (stack did not reduce correctly ) @[l%4d,c%4d]"%[first.lineNumber,first.column])
 
 		
 
@@ -881,6 +903,7 @@ class ExpressionNode extends ParseNode:
 		
 		if !Operator.is_op(type):
 			printerr("Unable to parse expression!")
+			return false
 		
 		var second = operatorStack.back().type
 
@@ -957,6 +980,8 @@ class Operator extends ParseNode:
 	static func op_info(op)->OperatorInfo:
 		if !Operator.is_op(op) : 
 			printerr("%s is not a valid operator" % op.name)
+			return null
+
 
 		#determine associativity and operands 
 		# each operand has
@@ -981,6 +1006,7 @@ class Operator extends ParseNode:
 				return OperatorInfo.new(Associativity.Left,2,2)
 			_:
 				printerr("Unknown operator: %s" % op.name)
+
 		return null
 
 	static func is_op(type)->bool:

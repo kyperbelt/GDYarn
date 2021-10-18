@@ -14,11 +14,10 @@ export(Array, String, FILE, "*.yarn") var _yarnPrograms = []
 func _init():
 	pass
 
-func _load_program(source:String,fileName:String,showTokens: bool , printSyntax : bool)->YarnProgram:
-	var p : YarnProgram = YarnProgram.new()
+
+func _load_program(p : YarnProgram,source:String,fileName:String,showTokens: bool , printSyntax : bool)->int:
 	var YarnCompiler = load("res://addons/gdyarn/core/compiler/compiler.gd")
-	YarnCompiler.compile_string(source,fileName,p,showTokens,printSyntax)
-	return p
+	return YarnCompiler.compile_string(source,fileName,p,showTokens,printSyntax)
 
 func set_dir(value):
 	if value.begins_with("res://"):
@@ -46,12 +45,20 @@ func _compile_programs(showTokens : bool, printSyntax : bool):
 		var f := File.new()
 		f.open(file,File.READ)
 		var source := f.get_as_text()
-		var p = _load_program(source,file,showTokens,printSyntax)
-		programs.append(p)
+		var p = YarnProgram.new()
+		var _ok = _load_program(p,source,file,showTokens,printSyntax)
+		if _ok == OK:
+			programs.append(p)
+			print("compiled [%s] successfully!" % file)
+		else:
+			printerr("failed to compile [%s]."%file)
+			f.close()
+			return
+
 		f.close()
 
-		# combine all the programs into a single one
-		return  ProgramUtils.combine_programs([]+programs)
+	# combine all the programs into a single one
+	return  ProgramUtils.combine_programs([]+programs)
 
 # func set_files(arr):
 # 	if !Engine.editor_hint:

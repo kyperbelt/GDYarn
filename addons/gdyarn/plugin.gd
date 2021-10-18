@@ -3,7 +3,8 @@ extends EditorPlugin
 
 
 var Autoloads : Dictionary = {
-	"YarnGlobals":"res://addons/gdyarn/autoloads/execution_states.gd"
+	"YarnGlobals":"res://addons/gdyarn/autoloads/execution_states.gd",
+	"NumberPlurals":"res://addons/gdyarn/autoloads/number_plurals.gd"
 }
 
 var Nodes : Dictionary = {
