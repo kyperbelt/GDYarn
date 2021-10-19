@@ -7,6 +7,11 @@ const Parser = preload("res://addons/gdyarn/core/compiler/parser.gd")
 const Lexer =  Parser.Lexer#preload("res://addons/gdyarn/core/compiler/lexer.gd")
 
 func _ready():
+
+
+	var testString = "en"
+
+	printerr("testString size = %s" %testString.split("_"))
 	var file := File.new()
 	var _ok = file.open(yarnFile, File.READ)
 
@@ -74,7 +79,7 @@ func _ready():
 		body = bodyLines.join('\n')
 		var lexer = Lexer.new()
 
-		var tokens : Array = lexer.tokenize(body)
+		var tokens : Array = lexer.tokenize(body,lineNumber)
 		lexer.free()
 		print_tokens(title,tokens)
 

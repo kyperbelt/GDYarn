@@ -226,6 +226,7 @@ class FormatFunctionData:
 
 func expand_format_functions(input:String, locale : String)->String:
 	# printerr("locale : %s" % locale)
+	var proccessedLocale := locale.split("_")[0]
 	var formattedLine:String = input
 
 	# TODO FIXME: probably dont want to compile the regex patterns every time we expand
