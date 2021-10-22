@@ -1,7 +1,11 @@
 extends Node
 
-const Value = preload("res://addons/gdyarn/core/value.gd")
+onready var Value = load("res://addons/gdyarn/core/value.gd")
 var variables : Dictionary = {} setget _set_vars,_get_vars
+
+
+func _ready():
+	pass
 
 func set_value(name:String,value):
 	if !(value is Value):
@@ -39,3 +43,15 @@ func _set_vars(value):
 # return all the variables currently being stored
 func var_names()->Array:
 	return variables.keys()
+
+
+# This should is just one way to help storage perist between scenes
+# TODO:
+#      conver the data contained in this storage into a string
+func convert_to_string_data()->String:
+	return ""
+
+#TODO:
+#     populate the storage using data from a string
+func populate_from_string(data : String):
+	pass

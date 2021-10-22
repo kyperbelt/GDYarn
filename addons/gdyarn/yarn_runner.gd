@@ -7,10 +7,9 @@ const DisplayInterface = preload("res://addons/gdyarn/yarn_gui.gd")
 const LineInfo = preload("res://addons/gdyarn/core/program/yarn_line.gd")
 const Line = preload("res://addons/gdyarn/core/dialogue/line.gd")
 
-
-
 # show debug statements
-export(bool) var debug = true
+# export(bool) #TODO removed debug from export to declutter the inspector. Maybe add this somewhere else.
+var debug = true
 
 export(String) var _startNode = "Start"
 
@@ -20,11 +19,8 @@ export(NodePath) var _variableStorage
 
 export(NodePath) var _displayInterface
 
-export(String) var locale = "en_US" setget set_locale
-
 # String is a path to a PNG file in the global filesystem.
 export(Resource) var _compiledYarnProgram setget set_program
-
 
 var _stringTable : Dictionary = {}#localization support to come
 
@@ -80,13 +76,6 @@ func _compile_programs(showTokens : bool, printTree: bool):
 	_compiledYarnProgram._save_compiled_program(program)
 	pass
 
-
-func set_locale(value):
-	if value in TranslationServer.get_loaded_locales():
-		locale = value
-		emit_signal("locale_changed",value)
-	else:
-		printerr("[%s] is not a valid locale id.")
 
 func set_program(program):
 	_compiledYarnProgram = program

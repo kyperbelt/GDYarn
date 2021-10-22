@@ -1,6 +1,6 @@
 extends EditorInspectorPlugin
 
-var compilerUi : PackedScene= preload("res://addons/gdyarn/CompileUi.tscn")
+var compilerUi : PackedScene= preload("res://addons/gdyarn/ui/CompileUi.tscn")
 
 func can_handle(object):
 	if object.has_method("_handle_command"):

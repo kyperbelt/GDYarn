@@ -37,7 +37,7 @@ func create_states():
 
 	patterns[YarnGlobals.TokenType.Number] = "\\-?[0-9]+(\\.[0-9]+)?"
 	patterns[YarnGlobals.TokenType.Str] = "\"([^\"\\\\]*(?:\\.[^\"\\\\]*)*)\""
-	patterns[YarnGlobals.TokenType.TagMarker] = "(#[a-zA-Z]+:)"
+	patterns[YarnGlobals.TokenType.TagMarker] = "#"#"(#[a-zA-Z]+:)"
 	patterns[YarnGlobals.TokenType.LeftParen] = "\\("
 	patterns[YarnGlobals.TokenType.RightParen] =  "\\)"
 	patterns[YarnGlobals.TokenType.EqualTo] = "(==|is(?!\\w)|eq(?!\\w))"
@@ -349,7 +349,7 @@ func tokenize_line(line:String, lineNumber : int)->Array:
 		if lastWhiteSpace:
 			column += lastWhiteSpace.get_string().length()
 
-	if tokenStack.size() >= 1 && tokenStack.front().type == YarnGlobals.TokenType.Text:
+	if tokenStack.size() >= 1 && (tokenStack.front().type == YarnGlobals.TokenType.Text || tokenStack.front().type == YarnGlobals.TokenType.Identifier):
 		tokenStack.push_front(Token.new(YarnGlobals.TokenType.EndOfLine,_currentState,lineNumber,column,"break"))
 	tokenStack.invert()
 
@@ -430,7 +430,7 @@ class LexerState:
 	func expexted_tokens_string()->String:
 		var result = ""
 		for rule in rules:
-			result += "" + YarnGlobals.token_type_name(rule.tokenType)
+			result += "" + YarnGlobals.token_name(rule.tokenType)
 		return result
 
 	func contains_text_rule()->bool:
@@ -456,7 +456,7 @@ class Rule:
 		self.delimitsText = delimitsText
 
 	func _to_string():
-		return "[Rule : %s - %s]" % [YarnGlobals.token_type_name(tokenType),regex]
+		return "[Rule : %s - %s]" % [YarnGlobals.token_name(tokenType),regex]
 
 class IntBoolPair:
 	var key : int

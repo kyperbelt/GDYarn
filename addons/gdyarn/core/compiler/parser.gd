@@ -1,11 +1,12 @@
 extends Object
 
-const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
+# const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
 const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
 
 
 var _tokens : Array = []#token
 var error = OK
+var currentNodeName = "Start"
 
 func _init(tokens):
 	self._tokens = tokens
@@ -15,8 +16,9 @@ enum Associativity {
 	Left,Right,None
 }
 
-func parse_node()->YarnNode:
-	return YarnNode.new("Start",null,self)
+func parse_node(name : String = "Start")->YarnNode:
+	currentNodeName = name
+	return YarnNode.new(name,null,self)
 
 func next_symbol_is(validTypes:Array)->bool:
 	var type = self._tokens.front().type
@@ -50,11 +52,11 @@ func expect_symbol(tokenTypes:Array = [])->Lexer.Token:
 	var expectedTypes:String = " "
 
 	for tokenType in tokenTypes:
-		expectedTypes+=YarnGlobals.token_type_name(tokenType) +" "
+		expectedTypes+=YarnGlobals.get_script().token_type_name(tokenType) +" "
 	# expectedTypes+= ""
 
 
-	printerr("unexpected token: Expexted [%s] but got [ %s ] @(%s,%s)"% [expectedTypes,YarnGlobals.token_type_name(t.type),t.lineNumber,t.column])
+	printerr("unexpected token: Expexted [%s] but got [ %s ] @(%s,%s)"% [expectedTypes,YarnGlobals.get_script().token_type_name(t.type),t.lineNumber,t.column])
 	error = ERR_INVALID_DATA
 	return null
 
@@ -193,6 +195,8 @@ class LineNode extends ParseNode:
 	#             parse node that can have either an InlineExpression or a FunctionFormat
 	#             .. This is a consideration for Godot4.x
 	var substitutions : Array = [] # of type <InlineExpression |& FormatFunction>
+	var lineid    : String = ""
+	var lineTags  : PoolStringArray  = []
 
 	# NOTE: If format function an inline functions are both present
 	# returns a line in the format "Some text {0} and some other {1}[format "{2}" key="value" key="value"]"
@@ -209,6 +213,19 @@ class LineNode extends ParseNode:
 				var ie = InlineExpression.new(self,parser)
 				line_text+="{%d}" % substitutions.size()
 				substitutions.append(ie)
+			elif parser.next_symbols_are([YarnGlobals.TokenType.TagMarker,YarnGlobals.TokenType.Identifier]):
+				parser.expect_symbol()
+				var tagToken = parser.expect_symbol([ YarnGlobals.TokenType.Identifier ])
+				if tagToken.value.begins_with("line:"):
+					if lineid.empty():
+						lineid = tagToken.value
+					else:
+						printerr("Too many lineTags @[%s:%d]" %[parser.currentNodeName, tagToken.lineNumber])
+						return
+				else:
+					tags.append(tagToken.value)
+
+
 			else:
 				line_text += parser.expect_symbol([YarnGlobals.TokenType.Text]).value
 
@@ -642,7 +659,7 @@ class ValueNode extends ParseNode:
 			YarnGlobals.TokenType.NullToken:
 				value = Value.new(null)
 			_:
-				printerr("%s, Invalid token type @[l%4d:c%4d]" % [YarnGlobals.token_name(t.type),t.lineNumber,t.column])
+				printerr("%s, Invalid token type @[l%4d:c%4d]" % [YarnGlobals.get_script().token_type_name(t.type),t.lineNumber,t.column])
 				parser.error = ERR_INVALID_DATA
 
 	func tree_string(indentLevel : int)->String:
@@ -842,7 +859,7 @@ class ExpressionNode extends ParseNode:
 				var info : OperatorInfo = Operator.op_info(next.type)
 
 				if evalStack.size() < info.arguments:
-					printerr("Error parsing : Not enough arguments for %s [ got %s expected - was %s]"%[YarnGlobals.token_type_name(next.type),evalStack.size(),info.arguments])
+					printerr("Error parsing : Not enough arguments for %s [ got %s expected - was %s]"%[YarnGlobals.get_script().token_type_name(next.type),evalStack.size(),info.arguments])
 
 				var params : Array = []#ExpressionNode
 				for i in range(info.arguments):
@@ -941,7 +958,7 @@ class Assignment extends ParseNode:
 		var info : PoolStringArray = []
 		info.append(tab(indentLevel,"set:"))
 		info.append(tab(indentLevel+1,destination))
-		info.append(tab(indentLevel+1,YarnGlobals.token_type_name(operation)))
+		info.append(tab(indentLevel+1,YarnGlobals.get_script().token_type_name(operation)))
 		info.append(value.tree_string(indentLevel+1))
 		return info.join("")
 

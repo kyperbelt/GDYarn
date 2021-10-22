@@ -17,7 +17,7 @@ const INSTRUCTION_OPERANDS := "instruction_operands"
 const OPERAND_TYPE   := "operand_type"
 const OPERAND_VALUE  := "operand_value"
 
-const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
+# const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
 const Operand     = preload("res://addons/gdyarn/core/program/operand.gd")
 const YarnProgram = preload("res://addons/gdyarn/core/program/program.gd")
 const Instruction = preload("res://addons/gdyarn/core/program/instruction.gd")
@@ -32,15 +32,14 @@ func _init():
 static func export_program(program,filePath):
 	var file := File.new()
 
-	var stringsPath = "%s%s.strings" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename()]
+	var stringsPath = "%s%s-strings.csv" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename()]
 	var lineInfos = program.yarnStrings
-	var result : Array = _serialize_lines(lineInfos)
-	program._lineInfos = result[0]
-	var strings : Array = result[1]
+	var result : PoolStringArray = _serialize_lines(lineInfos)
+	var strings : String = result.join("\n")  #
 
 	file.open(stringsPath,File.WRITE)
 
-	file.store_line(var2str(strings))
+	file.store_line(strings)
 
 	file.close()
 
@@ -58,7 +57,7 @@ static func export_program(program,filePath):
 static func _serialize_program(program)->Dictionary:
 	var result :={}
 	result[PROGRAM_NAME] = program.programName
-	result[PROGRAM_LINE_INFO] = program._lineInfos
+	# result[PROGRAM_LINE_INFO] = program._lineInfos
 	result[PROGRAM_NODES] = _serialize_all_nodes(program.yarnNodes)
 
 	return result
@@ -86,40 +85,40 @@ static func _serialize_all_nodes(nodes)->Array:
 	return result
 
 # return an array
-static func _serialize_lines(lines)->Array:
+static func _serialize_lines(lines)->PoolStringArray:
 
-	var lineInfos : Array = []
-	var lineTexts : Array = []
+	var lineTexts : PoolStringArray = []
+	lineTexts.append("id, text, file, node, lineNumber, implicit, tags")
 	for lineKey in lines.keys():
 		var line = lines[lineKey]
-		var lineInfo := []
+		var lineInfo :PoolStringArray = []
 		lineInfo.append(lineKey)
+		lineInfo.append(line.text)
+		lineInfo.append(line.fileName)
 		lineInfo.append(line.nodeName)
 		lineInfo.append(line.lineNumber)
-		lineInfo.append(line.fileName)
 		lineInfo.append(line.implicit)
-		lineInfo.append(line.meta)
+		lineInfo.append(line.meta.join(" "))
 
-		lineInfos.append(lineInfo)
-		lineTexts.append(line.text)
+		lineTexts.append(lineInfo.join(","))
 
-	return [lineInfos, lineTexts]
+	return lineTexts
 
 
-static func _load_lines(lineData : Array)-> Dictionary:
+static func _load_lines(lineData : PoolStringArray)-> Dictionary:
 	var result := {}
-	var lineInfos = lineData[0]
-	var lineTexts = lineData[1]
+	for line in lineData:
+		if line.empty():
+			continue
+		var proccessedLine = line.split(",")
+		var lineKey    = proccessedLine[0]
 
-	for i in range(lineInfos.size()):
-		var lineKey    = lineInfos[i][0]
-
-		var text = lineTexts[i]
-		var nodeName   = lineInfos[i][1]
-		var lineNumber = lineInfos[i][2]
-		var fileName   = lineInfos[i][3]
-		var implicit   = lineInfos[i][4]
-		var meta       = lineInfos[i][5]
+		var text       = proccessedLine[1]
+		var fileName   = proccessedLine[2]
+		var nodeName   = proccessedLine[3]
+		var lineNumber = int(proccessedLine[4])
+		var implicit   = bool(proccessedLine[5])
+		var meta       = proccessedLine[6].split(" ")
 
 		var info = LineInfo.new(text,nodeName,lineNumber,fileName,implicit,meta)
 		result[lineKey] = info
@@ -159,9 +158,9 @@ static func _serialize_all_operands(operands)->Array:
 static func _import_program(filePath)->YarnProgram:
 	var file := File.new()
 
-	var stringsPath = "%s%s.strings" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename()]
-	var localizedStringsPath = "%s%s-%s.strings" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename(),TranslationServer.get_locale()]
-	var strings : Array
+	var stringsPath = "%s%s-strings.csv" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename()]
+	var localizedStringsPath = "%s%s-strings-%s.csv" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename(),TranslationServer.get_locale()]
+	var strings : PoolStringArray
 
 	if file.file_exists(localizedStringsPath):
 		file.open(localizedStringsPath,File.READ)
@@ -170,14 +169,15 @@ static func _import_program(filePath)->YarnProgram:
 	else:
 		printerr("%s file found for this program[%s], make one or recompile the program."%[stringsPath,filePath.get_basename()])
 
-	strings = str2var(file.get_as_text())
+	strings = file.get_as_text().split("\n")
 	file.close()
 
+	strings.remove(0)
 	file = File.new()
 
 	file.open(filePath,File.READ)
 	var data : Dictionary = str2var(file.get_as_text())
-	var stringsTable = _load_lines([data[PROGRAM_LINE_INFO],strings])
+	var stringsTable = _load_lines(strings)
 	file.close()
 
 	var program = _load_program(data)
@@ -271,6 +271,6 @@ static func combine_programs(programs : Array = []):
 				return null
 			p.yarnNodes[nodeKey] = program.yarnNodes[nodeKey]
 
-			YarnGlobals.merge_dir(p.yarnStrings,program.yarnStrings)
+			YarnGlobals.get_script().merge_dir(p.yarnStrings,program.yarnStrings)
 
 	return p

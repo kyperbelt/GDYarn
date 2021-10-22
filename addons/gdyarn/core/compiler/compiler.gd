@@ -1,6 +1,6 @@
 extends Object
 
-const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
+# const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
 
 const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
 const LineInfo = preload("res://addons/gdyarn/core/program/yarn_line.gd")
@@ -121,7 +121,7 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 			print_tokens(title,tokens)
 		var parser = Parser.new(tokens)
 
-		var parserNode = parser.parse_node()
+		var parserNode = parser.parse_node(title)
 		if parser.error != OK:
 			printerr("Failed to parse Node[%s] in file: %s."%[title,filename])
 			return parser.error
@@ -130,7 +130,6 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 			print(parserNode.tree_string(0))
 		parser.free()
 
-		parserNode.name = title
 		parsedNodes.append(parserNode)
 		while lineNumber < sourceLines.size() && sourceLines[lineNumber].empty():
 			lineNumber+=1
@@ -206,13 +205,13 @@ func compile_node(program:YarnProgram,parsedNode)->void:
 		
 
 
-func register_string(text:String,nodeName:String,id:String="",lineNumber:int=-1,tags:Array=[])->String:
+func register_string(text:String,nodeName:String,id:String="",lineNumber:int=-1,tags:PoolStringArray=[])->String:
 	var lineIdUsed : String
 
 	var implicit : bool
 
 	if id.empty():
-		lineIdUsed = "%s-%s-%d" % [self._fileName,nodeName,self._stringCount]
+		lineIdUsed = "%s-%s-%d" % [self._fileName.get_file(),nodeName,self._stringCount]
 		self._stringCount+=1
 
 		#use this when we generate implicit tags
@@ -225,7 +224,7 @@ func register_string(text:String,nodeName:String,id:String="",lineNumber:int=-1,
 		lineIdUsed = id
 		implicit = false
 
-	var stringInfo : LineInfo = LineInfo.new(text,nodeName,lineNumber,_fileName,implicit,tags)
+	var stringInfo : LineInfo = LineInfo.new(text,nodeName,lineNumber,_fileName.get_file(),implicit,tags)
 	#add to string table and return id
 	self._stringTable[lineIdUsed] = stringInfo
 
@@ -315,7 +314,7 @@ func generate_line(node,statement,line):
 		var inlineExpression = line.substitutions.pop_back()
 		generate_expression(node,inlineExpression.expression)
 	
-	var num : String = register_string(line.line_text,node.nodeName,"",statement.lineNumber,[]);
+	var num : String = register_string(line.line_text,node.nodeName,line.lineid,statement.lineNumber,line.tags);
 	emit(YarnGlobals.ByteCode.RunLine,node,[Operand.new(num),Operand.new(expressionCount)])
 
 
@@ -441,16 +440,16 @@ func generate_assignment(node,assignment):
 		match assignment.operation:
 			YarnGlobals.TokenType.AddAssign:
 				emit(YarnGlobals.ByteCode.CallFunc,node,
-					[Operand.new(YarnGlobals.token_type_name(YarnGlobals.TokenType.Add))])
+					[Operand.new(YarnGlobals.token_name(YarnGlobals.TokenType.Add))])
 			YarnGlobals.TokenType.MinusAssign:
 				emit(YarnGlobals.ByteCode.CallFunc,node,
-					[Operand.new(YarnGlobals.token_type_name(YarnGlobals.TokenType.Minus))])
+					[Operand.new(YarnGlobals.token_name(YarnGlobals.TokenType.Minus))])
 			YarnGlobals.TokenType.MultiplyAssign:
 				emit(YarnGlobals.ByteCode.CallFunc,node,
-					[Operand.new(YarnGlobals.token_type_name(YarnGlobals.TokenType.MultiplyAssign))])
+					[Operand.new(YarnGlobals.token_name(YarnGlobals.TokenType.MultiplyAssign))])
 			YarnGlobals.TokenType.DivideAssign:
 				emit(YarnGlobals.ByteCode.CallFunc,node,
-					[Operand.new(YarnGlobals.token_type_name(YarnGlobals.TokenType.DivideAssign))])
+					[Operand.new(YarnGlobals.token_name(YarnGlobals.TokenType.DivideAssign))])
 			_:
 				printerr("Invalid assignment operator.") #FIXME add more error information
 				error = ERR_INVALID_DATA
@@ -529,6 +528,6 @@ func clear_errors()->void:
 static func print_tokens(nodeName : String,tokens:Array=[]):
 	var list : PoolStringArray = []
 	for token in tokens:
-		list.append("\t [%14s] %s (%s line %s)\n"%[token.lexerState,YarnGlobals.token_type_name(token.type),token.value,token.lineNumber])
+		list.append("\t [%14s] %s (%s line %s)\n"%[token.lexerState,YarnGlobals.get_script().token_type_name(token.type),token.value,token.lineNumber])
 	print("Node[%s] Tokens:" % nodeName)
 	print(list.join("")) 

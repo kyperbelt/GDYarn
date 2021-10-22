@@ -20,7 +20,8 @@ script = ExtResource( 3 )
 [node name="TestDisplay" parent="." instance=ExtResource( 1 )]
 margin_left = 3.0
 margin_right = 3.0
-_wordsPerSecond = 8.118
+_wordsPerSecond = 5.754
+_autoNext = true
 
 [node name="StorageDisplay" type="Label" parent="."]
 margin_left = 14.0
@@ -34,7 +35,6 @@ __meta__ = {
 
 [node name="YarnRunner" type="Node" parent="."]
 script = ExtResource( 2 )
-debug = false
 _autoStart = true
 _variableStorage = NodePath("../storage")
 _displayInterface = NodePath("../TestDisplay")

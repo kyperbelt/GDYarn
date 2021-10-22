@@ -1,6 +1,6 @@
 extends Node
 
-var YarnGlobals = load("res://addons/gdyarn/autoloads/execution_states.gd")
+# var YarnGlobals = load("res://addons/gdyarn/autoloads/execution_states.gd")
 
 var FunctionInfo = load("res://addons/gdyarn/core/function_info.gd")
 var Value = load("res://addons/gdyarn/core/value.gd")

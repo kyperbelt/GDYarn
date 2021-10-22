@@ -1,0 +1,3 @@
+id, text, file, node, lineNumber, implicit, tags
+line:3234a,I participated in a [color=#ff00ff]race[/color] and came in {0}[ordinal  "{1}"  one="st" two="nd" few="rd" other="th"] place. ,inline_expressions.yarn,Start,0,False,
+inline_expressions.yarn-Start-0,The tree only has [plural  "{0}"  one="one apple" other="% apples"]!,inline_expressions.yarn,Start,0,True,

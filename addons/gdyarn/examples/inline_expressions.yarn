@@ -10,7 +10,7 @@ position: 332,79
 <<set $apples = ($place*3)^2>>
 
 // expexted result - "I participated in a race and cam in 5th place."
-I participated in a [color=#ff00ff]race[/color] and came in {$place}[ordinal {$place} one="st" two="nd" few="rd" other="th"] place.
+I participated in a [color=#ff00ff]race[/color] and came in {$place}[ordinal {$place} one="st" two="nd" few="rd" other="th"] place. #line:3234a
 // expected result - "The tree only has 2 apples!"
 The tree only has [plural {$apples} one="one apple" other="% apples"]!
 ===

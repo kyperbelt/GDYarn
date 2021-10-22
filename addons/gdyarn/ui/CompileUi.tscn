@@ -1,0 +1,115 @@
+[gd_scene load_steps=6 format=2]
+
+[ext_resource path="res://addons/gdyarn/ui/CompileUi.gd" type="Script" id=1]
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color( 0.266667, 0.278431, 0.352941, 1 )
+
+[sub_resource type="StyleBoxFlat" id=2]
+bg_color = Color( 0.741176, 0.576471, 0.976471, 1 )
+
+[sub_resource type="StyleBoxFlat" id=3]
+bg_color = Color( 0.384314, 0.447059, 0.643137, 1 )
+
+[sub_resource type="StyleBoxFlat" id=4]
+bg_color = Color( 0.156863, 0.164706, 0.211765, 1 )
+
+[node name="Control" type="VBoxContainer"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+size_flags_horizontal = 3
+size_flags_vertical = 0
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+CompileButton = NodePath("VBoxContainer/CompilationContainer/CompileButton")
+ShowTokens = NodePath("VBoxContainer/CompilationContainer/ShowTokens/CheckBox")
+PrintTree = NodePath("VBoxContainer/CompilationContainer/PrintTree/CheckBox")
+TestButton = NodePath("VBoxContainer/PopupDialog/Button")
+OpenDialog = NodePath("VBoxContainer/OpenDialog")
+Dialog = NodePath("VBoxContainer/PopupDialog")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+margin_right = 1024.0
+margin_bottom = 42.0
+
+[node name="CompilationContainer" type="HBoxContainer" parent="VBoxContainer"]
+margin_right = 1024.0
+margin_bottom = 42.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="CompileButton" type="Button" parent="VBoxContainer/CompilationContainer"]
+margin_right = 947.0
+margin_bottom = 42.0
+focus_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_styles/hover = SubResource( 1 )
+custom_styles/pressed = SubResource( 2 )
+custom_styles/focus = SubResource( 3 )
+custom_styles/disabled = SubResource( 4 )
+custom_styles/normal = SubResource( 3 )
+text = "COMPILE!"
+
+[node name="ShowTokens" type="VBoxContainer" parent="VBoxContainer/CompilationContainer"]
+margin_left = 951.0
+margin_right = 994.0
+margin_bottom = 42.0
+size_flags_vertical = 0
+
+[node name="Label" type="Label" parent="VBoxContainer/CompilationContainer/ShowTokens"]
+margin_right = 43.0
+margin_bottom = 14.0
+size_flags_vertical = 0
+text = "tokens"
+
+[node name="CheckBox" type="CheckBox" parent="VBoxContainer/CompilationContainer/ShowTokens"]
+margin_top = 18.0
+margin_right = 43.0
+margin_bottom = 42.0
+size_flags_horizontal = 3
+align = 1
+
+[node name="PrintTree" type="VBoxContainer" parent="VBoxContainer/CompilationContainer"]
+margin_left = 998.0
+margin_right = 1024.0
+margin_bottom = 42.0
+size_flags_vertical = 0
+
+[node name="Label" type="Label" parent="VBoxContainer/CompilationContainer/PrintTree"]
+margin_right = 26.0
+margin_bottom = 14.0
+size_flags_vertical = 0
+text = "tree"
+
+[node name="CheckBox" type="CheckBox" parent="VBoxContainer/CompilationContainer/PrintTree"]
+margin_top = 18.0
+margin_right = 26.0
+margin_bottom = 42.0
+size_flags_horizontal = 3
+align = 1
+
+[node name="OpenDialog" type="Button" parent="VBoxContainer"]
+visible = false
+margin_top = 46.0
+margin_right = 1024.0
+margin_bottom = 66.0
+text = "openDialog"
+
+[node name="PopupDialog" type="WindowDialog" parent="VBoxContainer"]
+margin_top = 46.0
+margin_right = 1024.0
+margin_bottom = 47.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Button" type="Button" parent="VBoxContainer/PopupDialog"]
+margin_right = 12.0
+margin_bottom = 20.0
+text = "Test"
+__meta__ = {
+"_edit_use_anchors_": false
+}

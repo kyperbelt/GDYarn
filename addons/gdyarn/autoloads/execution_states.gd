@@ -1,7 +1,6 @@
 extends Node
 
 
-
 #VM Execution States
 
 enum ExecutionState{
@@ -194,20 +193,14 @@ static func merge_dir(target, patch):
 		target[key] = patch[key]
 	
 
-
 #same as top one woops
-static func token_name(type)->String:
+func token_name(type)->String:
 	var string : String = ""
 	
 	for key in TokenType.keys():
 		if TokenType[key] == type:
 			return key					
 	return string
-
-
-
-
-
 
 
 ## FORMAT FUNCTION HANDLERS
@@ -252,6 +245,7 @@ func expand_format_functions(input:String, locale : String)->String:
 
 			var pcase = ""
 			# here we use our pluralisation library to get the correct results
+			# printerr("functionName = %s value=[%s] , locale=[%s]" % [functionResult.name, functionResult.value, locale])
 			match functionResult.name:
 				"select":
 					if functionResult.value in functionResult.parameters:
@@ -259,10 +253,10 @@ func expand_format_functions(input:String, locale : String)->String:
 					else:
 						formattedLine = formattedLine.replace("["+segment+"]","<%s has no seleciton>" % functionResult.value)
 				"plural":
-					pcase = NumberPlurals.plural_case_string(NumberPlurals.get_plural_case(locale, float(functionResult.value)))
+					pcase = NumberPlurals.plural_case_string(NumberPlurals.get_plural_case(proccessedLocale, float(functionResult.value)))
 
 				"ordinal":
-					pcase = NumberPlurals.plural_case_string(NumberPlurals.get_ordinal_case(locale,float(functionResult.value)))
+					pcase = NumberPlurals.plural_case_string(NumberPlurals.get_ordinal_case(proccessedLocale,float(functionResult.value)))
 
 			if !pcase.empty():
 				if pcase in functionResult.parameters:

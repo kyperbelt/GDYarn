@@ -1,5 +1,4 @@
 {
-"program_line_info": [ [ "res://addons/gdyarn/examples/inline_expressions.yarn-Start-0", "Start", 0, "res://addons/gdyarn/examples/inline_expressions.yarn", true, [  ] ], [ "res://addons/gdyarn/examples/inline_expressions.yarn-Start-1", "Start", 0, "res://addons/gdyarn/examples/inline_expressions.yarn", true, [  ] ] ],
 "program_name": "",
 "program_nodes": [ {
 "node_instructions": [ {
@@ -90,7 +89,7 @@
 "instruction_op": 3,
 "instruction_operands": [ {
 "operand_type": 1,
-"operand_value": "res://addons/gdyarn/examples/inline_expressions.yarn-Start-0"
+"operand_value": "line:3234a"
 }, {
 "operand_type": 3,
 "operand_value": 2.0
@@ -105,7 +104,7 @@
 "instruction_op": 3,
 "instruction_operands": [ {
 "operand_type": 1,
-"operand_value": "res://addons/gdyarn/examples/inline_expressions.yarn-Start-1"
+"operand_value": "inline_expressions.yarn-Start-0"
 }, {
 "operand_type": 3,
 "operand_value": 1.0
