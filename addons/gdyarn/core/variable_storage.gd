@@ -1,5 +1,7 @@
 extends Node
 
+class_name VariableStorage, "res://addons/gdyarn/assets/storage.png"
+
 onready var Value = load("res://addons/gdyarn/core/value.gd")
 var variables : Dictionary = {} setget _set_vars,_get_vars
 

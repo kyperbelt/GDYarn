@@ -1,4 +1,3 @@
-extends Object
 
 const LINE_COMENT : String = "//"
 const FORWARD_SLASH : String = "/"
@@ -112,6 +111,7 @@ func create_states():
 	_states[shortcut_option] = LexerState.new(patterns)
 	_states[shortcut_option].track_indent = true
 	_states[shortcut_option].add_transition(YarnGlobals.TokenType.BeginCommand,EXPRESSION,true)
+	_states[shortcut_option].add_transition(YarnGlobals.TokenType.ExpressionFunctionStart,inline_expression,true)
 	_states[shortcut_option].add_transition(YarnGlobals.TokenType.TagMarker,shortcut_option_tag,true)
 	_states[shortcut_option].add_text_rule(YarnGlobals.TokenType.Text,BASE)
 	
@@ -237,7 +237,8 @@ func tokenize_line(line:String, lineNumber : int)->Array:
 	var freshLine = line.replace("\t","    ").replace("\r","")
 
 	#record indentation
-	var indentation = line_indentation(line)
+	var indentation = line_indentation(freshLine)
+	# printerr("line indentation of ((%s)) is %d !!!!!%s" %[freshLine, indentation,str(_shouldTrackIndent)])
 	var prevIndentation : IntBoolPair = _indentStack.front()
 
 	if _shouldTrackIndent && indentation > prevIndentation.key:
@@ -245,7 +246,7 @@ func tokenize_line(line:String, lineNumber : int)->Array:
 		_indentStack.push_front(IntBoolPair.new(indentation,true))
 
 		var indent : Token = Token.new(YarnGlobals.TokenType.Indent,_currentState,lineNumber,prevIndentation.key)
-		indent.value = "%*s" % [indentation - prevIndentation.key,""]
+		indent.value = "%*s" % [indentation - prevIndentation.key,"0"]
 
 		_shouldTrackIndent = false
 		tokenStack.push_front(indent)
@@ -292,7 +293,9 @@ func tokenize_line(line:String, lineNumber : int)->Array:
 
 				if tokenStack.size() > 0 :
 					while tokenStack.front().type == YarnGlobals.TokenType.Identifier:
-						tokenStack.pop_front()
+						var t = tokenStack.pop_front()
+						# if t.type == YarnGlobals.TokenType.Indent:
+							# printerr("popedOfff some indentation")
 					
 					var startDelimitToken : Token = tokenStack.front()
 					startIndex =  startDelimitToken.column
@@ -338,26 +341,26 @@ func tokenize_line(line:String, lineNumber : int)->Array:
 						_indentStack.append(IntBoolPair.new(indentation,false))
 			
 			matched = true
-			break;
+			break
 
 		if !matched:
 			printerr("expectedTokens [%s] - line(%s) col(%s)"%[_currentState.expected_tokens_string(),lineNumber,column])
 			error = ERR_INVALID_DATA
 			return []
 
-		var lastWhiteSpace : RegExMatch = whitespace.search(line,column)
+		var lastWhiteSpace : RegExMatch = whitespace.search(freshLine,column)
 		if lastWhiteSpace:
 			column += lastWhiteSpace.get_string().length()
 
-	if tokenStack.size() >= 1 && (tokenStack.front().type == YarnGlobals.TokenType.Text || tokenStack.front().type == YarnGlobals.TokenType.Identifier):
-		tokenStack.push_front(Token.new(YarnGlobals.TokenType.EndOfLine,_currentState,lineNumber,column,"break"))
+	# if tokenStack.size() >= 1 && (tokenStack.front().type == YarnGlobals.TokenType.Text || tokenStack.front().type == YarnGlobals.TokenType.Identifier):
+	# 	tokenStack.push_front(Token.new(YarnGlobals.TokenType.EndOfLine,_currentState,lineNumber,column,"break"))
 	tokenStack.invert()
 
 	return tokenStack
 
 func line_indentation(line:String)->int:
 	var indentRegex : RegEx = RegEx.new()
-	indentRegex.compile("^(\\s*)")
+	indentRegex.compile("^(?:\\s*)")
 
 	var found : RegExMatch = indentRegex.search(line)
 	
@@ -367,8 +370,8 @@ func line_indentation(line:String)->int:
 	return found.get_string().length()
 
 func enter_state(state:LexerState):
-	_currentState = state;
-	_shouldTrackIndent = _currentState.track_indent
+	_currentState = state
+	_shouldTrackIndent = true if _currentState.track_indent else _shouldTrackIndent
 
 class Token:
 	var type : int

@@ -1,5 +1,7 @@
+tool
 extends Node
 
+const GDYarnUtils := preload("res://addons/gdyarn/autoloads/gdyarn_utilities.gd")
 
 #VM Execution States
 
@@ -91,6 +93,8 @@ enum TokenType {
 	OptionEnd, # ]]
 
 	# format functions are proccessed further in the compiler
+
+
 	FormatFunctionStart, # [
 	FormatFunctionEnd,   # ]
 
@@ -178,6 +182,11 @@ enum ValueType{
 	Variable,
 	Nullean#null lel
 }
+static func get_value_type_name(valueType: int):
+	for key in ValueType.keys():
+		if ValueType[key] == valueType:
+			return key
+	return "Invalid"
 
 func defaultValue(type):
 	pass

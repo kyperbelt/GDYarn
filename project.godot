@@ -13,9 +13,39 @@ _global_script_classes=[ {
 "class": "CompiledYarnProgram",
 "language": "GDScript",
 "path": "res://addons/gdyarn/compiled_yarn_program.gd"
+}, {
+"base": "Reference",
+"class": "MarkupRegion",
+"language": "GDScript",
+"path": "res://addons/gdyarn/core/dialogue/markup_regions.gd"
+}, {
+"base": "Node",
+"class": "VariableStorage",
+"language": "GDScript",
+"path": "res://addons/gdyarn/core/variable_storage.gd"
+}, {
+"base": "Control",
+"class": "YarnDisplay",
+"language": "GDScript",
+"path": "res://addons/gdyarn/yarn_gui.gd"
+}, {
+"base": "Resource",
+"class": "YarnFile",
+"language": "GDScript",
+"path": "res://addons/gdyarn/yarnfile.gd"
+}, {
+"base": "EditorImportPlugin",
+"class": "YarnImporter",
+"language": "GDScript",
+"path": "res://addons/gdyarn/yarn_importer.gd"
 } ]
 _global_script_class_icons={
-"CompiledYarnProgram": ""
+"CompiledYarnProgram": "",
+"MarkupRegion": "",
+"VariableStorage": "res://addons/gdyarn/assets/storage.png",
+"YarnDisplay": "res://addons/gdyarn/assets/display.PNG",
+"YarnFile": "",
+"YarnImporter": ""
 }
 
 [application]
@@ -33,6 +63,6 @@ NumberPlurals="*res://addons/gdyarn/autoloads/number_plurals.gd"
 
 enabled=PoolStringArray( "res://addons/gdyarn/plugin.cfg" )
 
-[rendering]
+[locale]
 
-environment/default_environment="res://default_env.tres"
+locale_filter=[ 0, [  ] ]

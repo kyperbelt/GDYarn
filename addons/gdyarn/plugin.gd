@@ -4,7 +4,8 @@ extends EditorPlugin
 
 var Autoloads : Dictionary = {
 	"YarnGlobals":"res://addons/gdyarn/autoloads/execution_states.gd",
-	"NumberPlurals":"res://addons/gdyarn/autoloads/number_plurals.gd"
+	"NumberPlurals":"res://addons/gdyarn/autoloads/number_plurals.gd",
+	# "GDYarnUtils" : "res://addons/gdyarn/autoloads/gdyarn_utilities.gd"
 }
 
 var Nodes : Dictionary = {
@@ -18,7 +19,12 @@ const LocalizerScene    : PackedScene = preload("res://addons/gdyarn/ui/Localize
 var localizerGui
 var compilerInspector
 
+var yarnImporter = null
+
 func _enter_tree():
+	yarnImporter = YarnImporter.new()
+	add_import_plugin(yarnImporter)
+
 	localizerGui = LocalizerScene.instance()
 	add_child(localizerGui)
 	localizerGui._initiate()
@@ -45,6 +51,9 @@ func _exit_tree():
 
 	remove_inspector_plugin(compilerInspector)
 	remove_tool_menu_item("GDYarn Localizer")
+	remove_import_plugin(yarnImporter)
+
+	yarnImporter = null
 
 func open_localizer_gui(ud):
 	print(ud)

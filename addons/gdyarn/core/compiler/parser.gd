@@ -1,4 +1,3 @@
-extends Object
 
 # const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
 const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
@@ -20,20 +19,20 @@ func parse_node(name : String = "Start")->YarnNode:
 	currentNodeName = name
 	return YarnNode.new(name,null,self)
 
-func next_symbol_is(validTypes:Array)->bool:
+func next_symbol_is(validTypes:Array, line : int = -1)->bool:
 	var type = self._tokens.front().type
 	for validType in validTypes:
-		if type == validType:
+		if type == validType && (line == -1 || line == self._tokens.front().lineNumber):
 			return true
 	return false
 
 #look ahead for `<<` and `else`
-func next_symbols_are(validTypes:Array)->bool:
+func next_symbols_are(validTypes:Array,line : int = -1)->bool:
 	var temp = []+_tokens
 	for type in validTypes:
 		if temp.pop_front().type != type:
 			return false
-	return true
+	return (line == -1 || line == self._tokens.front().lineNumber)
 
 func expect_symbol(tokenTypes:Array = [])->Lexer.Token:
 	var t = self._tokens.pop_front() as Lexer.Token
@@ -60,8 +59,8 @@ func expect_symbol(tokenTypes:Array = [])->Lexer.Token:
 	error = ERR_INVALID_DATA
 	return null
 
-static func tab(indentLevel : int , input : String,newLine : bool = true)->String:
-	return ("%*s| %s%s"% [indentLevel*2,"",input,("" if !newLine else "\n")]) 
+# static func tab(indentLevel : int , input : String,newLine : bool = true)->String:
+# 	return ("%*s| %s%s"% [indentLevel*2,"",input,("" if !newLine else "\n")])
 
 func tokens()->Array:
 	return _tokens
@@ -114,6 +113,7 @@ class YarnNode extends ParseNode:
 	
 	var editorNodeTags : Array =[]#tags defined in node header
 	var statements : Array = []# Statement
+	var hasOptions := false
 
 	func _init(name:String,parent:ParseNode,parser).(parent,parser):
 
@@ -124,6 +124,7 @@ class YarnNode extends ParseNode:
 			statements.append(Statement.new(self,parser))
 			#print(statements.size())
 
+	# WARNING: DO NOT REMOVE SINCE THIS IS THE WAY WE CHECK CLASS
 	func yarn_node():
 		pass
 
@@ -138,7 +139,8 @@ class YarnNode extends ParseNode:
 
 		return info.join("")
 	
-#DEPRECATED
+# UNIMPLEMENTED .
+# might be worth handling this through the parser instead as a pre-process step
 # we handle header information before we beign parsing content
 class Header extends ParseNode:
 	pass
@@ -203,7 +205,8 @@ class LineNode extends ParseNode:
 
 	func _init(parent:ParseNode,parser).(parent,parser):
 
-		while !parser.next_symbol_is([YarnGlobals.TokenType.EndOfLine]):
+		while (parser.next_symbol_is([YarnGlobals.TokenType.FormatFunctionStart,YarnGlobals.TokenType.ExpressionFunctionStart,
+			YarnGlobals.TokenType.Text, YarnGlobals.TokenType.TagMarker]) ):
 			if FormatFunction.can_parse(parser):
 				var ff = FormatFunction.new(self,parser,substitutions.size())
 				if ff.expression_value != null:
@@ -227,7 +230,13 @@ class LineNode extends ParseNode:
 
 
 			else:
-				line_text += parser.expect_symbol([YarnGlobals.TokenType.Text]).value
+
+				var tt = parser.expect_symbol()
+				if tt.lineNumber == lineNumber && !(tt.type == YarnGlobals.TokenType.BeginCommand):
+					line_text += tt.value
+				else:
+					parser._tokens.push_front(tt)
+					break
 
 
 	func tree_string(indentLevel : int)->String:
@@ -250,21 +259,26 @@ class Statement extends ParseNode:
 			return
 
 		if Block.can_parse(parser):
+			# printerr("parsing a block")
 			block  = Block.new(self,parser)
 			type = Type.Block
 		elif IfStatement.can_parse(parser):
+			# printerr("parsing if statement")
 			ifStatement = IfStatement.new(self,parser)
 			type = Type.IfStatement
 		elif OptionStatement.can_parse(parser):
+			# printerr("parsing an option statemetn")
 			optionStatement = OptionStatement.new(self,parser)
 			type = Type.OptionStatement
 		elif Assignment.can_parse(parser):
 			assignment = Assignment.new(self,parser)
 			type = Type.AssignmentStatement
 		elif ShortcutOptionGroup.can_parse(parser):
+			# printerr("parsing shortcut option group")
 			shortcutOptionGroup = ShortcutOptionGroup.new(self,parser)
 			type = Type.ShortcutOptionGroup
 		elif CustomCommand.can_parse(parser):
+			# printerr("parsing commands")
 			customCommand = CustomCommand.new(self,parser)
 			type = Type.CustomCommand
 		elif parser.next_symbol_is([YarnGlobals.TokenType.Text]):
@@ -272,7 +286,8 @@ class Statement extends ParseNode:
 			# type = Type.Line
 			line = LineNode.new(self,parser)
 			type = Type.Line
-			parser.expect_symbol([YarnGlobals.TokenType.EndOfLine])
+			# printerr("new line found == ", line.line_text)
+			# parser.expect_symbol([YarnGlobals.TokenType.EndOfLine])
 		else:
 			printerr("expected a statement but got %s instead. (probably an inbalanced if statement)" % parser.tokens().front()._to_string())
 			parser.error = ERR_PARSE_ERROR
@@ -280,13 +295,13 @@ class Statement extends ParseNode:
 		
 		var tags : Array = []
 
-		while parser.next_symbol_is([YarnGlobals.TokenType.TagMarker]):
-			parser.expect_symbol([YarnGlobals.TokenType.TagMarker])
-			var tag : String = parser.expect_symbol([YarnGlobals.TokenType.Identifier]).value
-			tags.append(tag)
+		# while parser.next_symbol_is([YarnGlobals.TokenType.TagMarker]):
+		# 	parser.expect_symbol([YarnGlobals.TokenType.TagMarker])
+		# 	var tag : String = parser.expect_symbol([YarnGlobals.TokenType.Identifier]).value
+		# 	tags.append(tag)
 
-		if(tags.size()>0):
-			self.tags = tags
+		# if(tags.size()>0):
+		# 	self.tags = tags
 
 	func tree_string(indentLevel : int)->String:
 		var info : PoolStringArray = []
@@ -380,7 +395,8 @@ class ShortcutOptionGroup extends ParseNode:
 		while parser.next_symbol_is([YarnGlobals.TokenType.ShortcutOption]):
 			options.append(ShortCutOption.new(sIndex, self, parser))
 			sIndex+=1
-
+		var nameOfTopOfStack = YarnGlobals.get_script().token_type_name(parser._tokens.front().type)
+		# printerr("eneded the shortcut group with a [%s] on top" % nameOfTopOfStack)
 
 	func tree_string(indentLevel : int)->String:
 		var info : PoolStringArray = []
@@ -400,21 +416,26 @@ class ShortcutOptionGroup extends ParseNode:
 
 class ShortCutOption extends ParseNode:
 
-	var label : String
+	var line : LineNode
 	var condition : ExpressionNode
 	var node : YarnNode
 
 	func _init(index:int, parent:ParseNode, parser).(parent,parser):
+		# printerr("starting shortcut option parse")
 		parser.expect_symbol([YarnGlobals.TokenType.ShortcutOption])
-		label = parser.expect_symbol([YarnGlobals.TokenType.Text]).value
-
+		line = LineNode.new(self,parser)
+		# printerr(" this is a line found in shortcutoption : ", line.line_text)
 		# parse the conditional << if $x >> when it exists
-
 		var tags : Array = []#string
+
+
 		while( parser.next_symbols_are([YarnGlobals.TokenType.BeginCommand,YarnGlobals.TokenType.IfToken]) 
 			|| parser.next_symbol_is([YarnGlobals.TokenType.TagMarker])):
-			
-			if parser.next_symbols_are([YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.IfToken]):
+
+
+			if parser.next_symbols_are([YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.IfToken],lineNumber):
+
+
 				parser.expect_symbol([YarnGlobals.TokenType.BeginCommand])
 				parser.expect_symbol([YarnGlobals.TokenType.IfToken])
 				condition = ExpressionNode.parse(self,parser)
@@ -423,9 +444,18 @@ class ShortCutOption extends ParseNode:
 				parser.expect_symbol([YarnGlobals.TokenType.TagMarker])
 				var tag : String = parser.expect_symbol([YarnGlobals.TokenType.Identifier]).value;
 				tags.append(tag)
+			else:
+				# printerr("could not find if or tag on the same line")
+				break
+
 
 		
 		self.tags = tags
+
+		for tag in tags:
+			if tag.begins_with("line:") && line.lineid.empty():
+				line.lineid = tag
+
 		# parse remaining statements
 
 		if parser.next_symbol_is([YarnGlobals.TokenType.Indent]):
@@ -437,7 +467,7 @@ class ShortCutOption extends ParseNode:
 	func tree_string(indentLevel : int)->String:
 		var info : PoolStringArray = []
 
-		info.append(tab(indentLevel,"Option \"%s\""%label))
+		info.append(tab(indentLevel,"Option \"%s\""%line.tree_string(indentLevel)))
 
 		if condition != null : 
 			info.append(tab(indentLevel+1,"(when:"))
@@ -488,32 +518,46 @@ class Block extends ParseNode:
 #Option Statements are links to other nodes
 class OptionStatement extends ParseNode:
 	
-	var destination : String 
-	var label : String
+	var destination : String = ""
+	var line : LineNode = null
 
 	func _init(parent:ParseNode, parser).(parent,parser):
 
-		var strings : Array = []#string
+		# var strings : Array = []#string
 
 		#parse [[LABEL
 		parser.expect_symbol([YarnGlobals.TokenType.OptionStart])
-		strings.append(parser.expect_symbol([YarnGlobals.TokenType.Text]).value)
+
+		line = LineNode.new(self,parser)
+		# printerr("line inside the statement : ",line.line_text)
+		# var tokens := []
+
+		# tokens.append(parser.expect_symbol([YarnGlobals.TokenType.Text]))
 
 		#if there is a | get the next string
 		if parser.next_symbol_is([YarnGlobals.TokenType.OptionDelimit]):
 			parser.expect_symbol([YarnGlobals.TokenType.OptionDelimit])
 			var t = parser.expect_symbol([YarnGlobals.TokenType.Text,YarnGlobals.TokenType.Identifier])
-			#print("Token %s"%t.value)
-			strings.append(t.value as String)
+			destination = t.value
 		
-		label = strings[0] if strings.size() > 1 else ""
-		destination = strings[1] if strings.size() > 1 else strings[0]
+		if line && destination.empty():
+			destination = line.line_text
+			line == null
+		else:
+			get_node_parent().hasOptions = true
 
 		parser.expect_symbol([YarnGlobals.TokenType.OptionEnd])
 
+		if parser.next_symbol_is([YarnGlobals.TokenType.TagMarker], lineNumber):
+			# TODO FIXME : give an error if there are too many line tags
+			parser.expect_symbol()
+			var id = parser.expect_symbol([YarnGlobals.TokenType.Identifier]).value
+			if line:
+				line.lineid = id
+
 	func tree_string(indentLevel : int)->String:
-		if label != null:
-			return tab(indentLevel,"Option: %s -> %s"%[label,destination])
+		if line != null:
+			return tab(indentLevel,"Option: [%s] -> %s"%[line.tree_string(0),destination])
 		else:
 			return tab(indentLevel,"Option: -> %s"%destination)
 
@@ -611,17 +655,18 @@ class IfStatement extends ParseNode:
 
 		for clause in clauses:
 			if first:
-				info.append(tab(indentLevel,"if:"))
+				info.append(tab(indentLevel,"if:",true))
 			elif clause.expression!=null:
-				info.append(tab(indentLevel,"Else If"))
+				info.append(tab(indentLevel,"Else If",true))
 			else:
-				info.append(tab(indentLevel,"Else:"))
+				info.append(tab(indentLevel,"Else:",true))
 
-			info.append(clause.tree_string(indentLevel +1))
+			info.append(clause.tree_string(indentLevel))
 
 		return info.join("")
 
 	static func can_parse(parser)->bool:
+
 		return parser.next_symbols_are([YarnGlobals.TokenType.BeginCommand,YarnGlobals.TokenType.IfToken])
 	pass
 
@@ -662,8 +707,9 @@ class ValueNode extends ParseNode:
 				printerr("%s, Invalid token type @[l%4d:c%4d]" % [YarnGlobals.get_script().token_type_name(t.type),t.lineNumber,t.column])
 				parser.error = ERR_INVALID_DATA
 
-	func tree_string(indentLevel : int)->String:
-		return tab(indentLevel, "<%s>%s"%[value.type,value.value()])
+
+	func tree_string(indentLevel : int,newline : bool = true)->String:
+		return tab(indentLevel,"<%s>%s"%[YarnGlobals.get_script().get_value_type_name(value.type),value.value()],newline)
 
 		
 #Expressions encompass a wide range of things like:
@@ -1086,4 +1132,11 @@ class Clause:
 		return info.join("")
 
 	func tab(indentLevel : int , input : String,newLine : bool = true)->String:
-		return ("%*s| %s%s"% [indentLevel*2,"",input,("" if !newLine else "\n")]) 
+		var tabPrecursor = ""
+		var indentSpacing= 3
+		for i in range(indentLevel):
+			tabPrecursor+="|%*s"%[indentSpacing,""]
+
+		return ("%*s %s%s"% [+indentLevel,tabPrecursor,input,("" if !newLine else "\n")])
+	# func tab(indentLevel : int , input : String,newLine : bool = true)->String:
+	# 	return ("%*s| %s%s"% [indentLevel*2,"",input,("" if !newLine else "\n")])

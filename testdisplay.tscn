@@ -13,8 +13,8 @@ script = ExtResource( 1 )
 __meta__ = {
 "_edit_use_anchors_": false
 }
-_textDisplay = NodePath("Label")
 _options = [ NodePath("option0"), NodePath("option1"), NodePath("option2") ]
+_textDisplay = NodePath("Label")
 
 [node name="Label" type="RichTextLabel" parent="."]
 margin_left = 119.403

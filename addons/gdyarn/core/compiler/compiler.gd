@@ -1,5 +1,3 @@
-extends Object
-
 # const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
 
 const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
@@ -111,11 +109,10 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 		body = bodyLines.join('\n')
 		var lexer = Lexer.new()
 
-		var tokens : Array = lexer.tokenize(body,1)
+		var tokens : Array = lexer.tokenize(body,0)
 		if lexer.error != OK:
 			printerr("Failed to tokenize the Node[%s] in file: %s."%[title,filename])
 			return lexer.error
-		lexer.free()
 
 		if showTokens:
 			print_tokens(title,tokens)
@@ -128,7 +125,6 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 
 		if printTree:
 			print(parserNode.tree_string(0))
-		parser.free()
 
 		parsedNodes.append(parserNode)
 		while lineNumber < sourceLines.size() && sourceLines[lineNumber].empty():
@@ -147,7 +143,6 @@ static func compile_string(source:String,filename,program:YarnProgram,showTokens
 	merge_dir(program.yarnStrings,compiler._stringTable)
 			
 
-	compiler.free()
 	return OK
 
 
@@ -182,19 +177,21 @@ func compile_node(program:YarnProgram,parsedNode)->void:
 			#add options
 			#todo: add parser flag
 
-			var hasOptions : bool = false
+			# var hasOptions : bool = false
 
-			for instruction in nodeCompiled.instructions : 
-				if instruction.operation == YarnGlobals.ByteCode.AddOption:
-					hasOptions = true
-				if instruction.operation == YarnGlobals.ByteCode.ShowOptions:
-					hasOptions = false
+			# for instruction in nodeCompiled.instructions :
+			# 	if instruction.operation == YarnGlobals.ByteCode.AddOption:
+			# 		hasOptions = true
+			# 	if instruction.operation == YarnGlobals.ByteCode.ShowOptions:
+			# 		hasOptions = false
 
 			#if no lingering options we stop
-			if hasOptions:
+			if !parsedNode.hasOptions:
+				printerr("no options found")
 				emit(YarnGlobals.ByteCode.Stop,nodeCompiled)
 			else:
 
+				printerr("found options in node %s "% parsedNode.name)
 				#otherwise show and jump to selected
 				emit(YarnGlobals.ByteCode.ShowOptions,nodeCompiled)
 				emit(YarnGlobals.ByteCode.RunNode,nodeCompiled)
@@ -301,10 +298,7 @@ func generate_custom_command(node,command):
 #compile instructions for linetags and use them 
 # \#line:number
 func generate_line(node,statement,line):
-	#print("generating line")
-	#TODO do something g with line tags?? maybe someday
-
-	#giving me a LineNode
+	#giving me a LineNoda
 	#              - line_text : String
 	#              - substitutions (inline_Expressions) : Array
 
@@ -318,7 +312,6 @@ func generate_line(node,statement,line):
 	emit(YarnGlobals.ByteCode.RunLine,node,[Operand.new(num),Operand.new(expressionCount)])
 
 
-#FIXME : add support for format functions
 func generate_shortcut_group(node,shortcutGroup):
 	# print("generating shortcutoptopn group")
 	var end : String = register_label("group_end")
@@ -338,11 +331,16 @@ func generate_shortcut_group(node,shortcutGroup):
 			generate_expression(node,option.condition)
 			emit(YarnGlobals.ByteCode.JumpIfFalse,node,[Operand.new(endofClause)])
 
-		var labelLineId : String  = ""#no tag TODO: ADD TAG SUPPORT
-		var labelStringId : String = register_string(option.label,node.nodeName,
-			labelLineId,option.lineNumber,[])
+		var expressionCount = option.line.substitutions.size()
+
+		while !option.line.substitutions.empty():
+			var inlineExpression = option.line.substitutions.pop_back()
+			generate_expression(node,inlineExpression.expression)
+		var labelLineId : String  = option.line.lineid
+		var labelStringId : String = register_string(option.line.line_text,node.nodeName,
+			labelLineId,option.lineNumber,node.tags)
 		
-		emit(YarnGlobals.ByteCode.AddOption,node,[Operand.new(labelStringId),Operand.new(opDestination)])
+		emit(YarnGlobals.ByteCode.AddOption,node,[Operand.new(labelStringId),Operand.new(opDestination), Operand.new(expressionCount)])
 
 		if option.condition != null :
 			emit(YarnGlobals.ByteCode.Label,node,[Operand.new(endofClause)])
@@ -399,7 +397,7 @@ func generate_if(node,ifStatement):
 			emit(YarnGlobals.ByteCode.Label,node,[Operand.new(endClause)])
 
 		if clause.expression!=null:
-			emit(YarnGlobals.ByteCode.Pop)
+			emit(YarnGlobals.ByteCode.Pop,node)
 
 		
 	emit(YarnGlobals.ByteCode.Label,node,[Operand.new(endif)])
@@ -407,17 +405,23 @@ func generate_if(node,ifStatement):
 
 #compile instructions for options
 func generate_option(node,option):
-	# print("generating option")
+	print("generating option")
 	var destination : String = option.destination
 
-	if option.label == null || option.label.empty():
+	if !option.line:
 		#jump to another node
 		emit(YarnGlobals.ByteCode.RunNode,node,[Operand.new(destination)])
 	else : 
-		var lineID : String = ""#tags not supported TODO: ADD TAG SUPPORT
-		var stringID = register_string(option.label,node.name,lineID,option.lineNumber,[])
+		var lineID : String = option.line.lineid
+		var stringID = register_string(option.line.line_text,node.nodeName,lineID,option.lineNumber,option.line.tags)
 
-		emit(YarnGlobals.ByteCode.AddOption,node,[Operand.new(stringID),Operand.new(destination)])
+		var expressionCount = option.line.substitutions.size()
+
+		while !option.line.substitutions.empty():
+			var inLineExpression = option.line.substitutions.pop_back()
+			generate_expression(node,inLineExpression.expression)
+
+		emit(YarnGlobals.ByteCode.AddOption,node,[Operand.new(stringID),Operand.new(destination), Operand.new(expressionCount)])
 
 
 #compile instructions for assigning values
@@ -495,7 +499,7 @@ func generate_value(node,value):
 			emit(YarnGlobals.ByteCode.PushNumber,node,[Operand.new(value.value.as_number())])
 		YarnGlobals.ValueType.Str:
 			var id : String = register_string(value.value.as_string(),
-				node.name,"",value.lineNumber,[])
+				node.nodeName,"",value.lineNumber,[])
 			emit(YarnGlobals.ByteCode.PushString,node,[Operand.new(id)])
 		YarnGlobals.ValueType.Boolean:
 			emit(YarnGlobals.ByteCode.PushBool,node,[Operand.new(value.value.as_bool())])

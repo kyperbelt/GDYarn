@@ -17,12 +17,19 @@ const INSTRUCTION_OPERANDS := "instruction_operands"
 const OPERAND_TYPE   := "operand_type"
 const OPERAND_VALUE  := "operand_value"
 
+const STRINGS_DELIMITER := "\t"
+
 # const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
 const Operand     = preload("res://addons/gdyarn/core/program/operand.gd")
 const YarnProgram = preload("res://addons/gdyarn/core/program/program.gd")
 const Instruction = preload("res://addons/gdyarn/core/program/instruction.gd")
 const YarnNode    = preload("res://addons/gdyarn/core/program/yarn_node.gd")
 const LineInfo    = preload("res://addons/gdyarn/core/program/yarn_line.gd")
+
+
+const STRINGS_EXTENSION := "tsv"
+const DEFAULT_STRINGS_FORMAT = "%s%s-strings.%s"
+const LOCALISED_STRINGS_FORMAT = "%s%s-%s-strings.%s"
 
 func _init():
 	pass
@@ -32,7 +39,7 @@ func _init():
 static func export_program(program,filePath):
 	var file := File.new()
 
-	var stringsPath = "%s%s-strings.csv" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename()]
+	var stringsPath = DEFAULT_STRINGS_FORMAT % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename(),STRINGS_EXTENSION]
 	var lineInfos = program.yarnStrings
 	var result : PoolStringArray = _serialize_lines(lineInfos)
 	var strings : String = result.join("\n")  #
@@ -88,7 +95,8 @@ static func _serialize_all_nodes(nodes)->Array:
 static func _serialize_lines(lines)->PoolStringArray:
 
 	var lineTexts : PoolStringArray = []
-	lineTexts.append("id, text, file, node, lineNumber, implicit, tags")
+	var headers := PoolStringArray(["id", "text", "file", "node", "lineNumber", "implicit", "tags"])
+	lineTexts.append(headers.join(STRINGS_DELIMITER))
 	for lineKey in lines.keys():
 		var line = lines[lineKey]
 		var lineInfo :PoolStringArray = []
@@ -100,7 +108,7 @@ static func _serialize_lines(lines)->PoolStringArray:
 		lineInfo.append(line.implicit)
 		lineInfo.append(line.meta.join(" "))
 
-		lineTexts.append(lineInfo.join(","))
+		lineTexts.append(lineInfo.join(STRINGS_DELIMITER))
 
 	return lineTexts
 
@@ -110,10 +118,10 @@ static func _load_lines(lineData : PoolStringArray)-> Dictionary:
 	for line in lineData:
 		if line.empty():
 			continue
-		var proccessedLine = line.split(",")
+		var proccessedLine = line.split(STRINGS_DELIMITER)
 		var lineKey    = proccessedLine[0]
 
-		var text       = proccessedLine[1]
+		var text       = proccessedLine[1].strip_escapes()
 		var fileName   = proccessedLine[2]
 		var nodeName   = proccessedLine[3]
 		var lineNumber = int(proccessedLine[4])
@@ -158,8 +166,8 @@ static func _serialize_all_operands(operands)->Array:
 static func _import_program(filePath)->YarnProgram:
 	var file := File.new()
 
-	var stringsPath = "%s%s-strings.csv" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename()]
-	var localizedStringsPath = "%s%s-strings-%s.csv" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename(),TranslationServer.get_locale()]
+	var stringsPath = DEFAULT_STRINGS_FORMAT % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename(),STRINGS_EXTENSION]
+	var localizedStringsPath = "%s%s-strings-%s.ots" % [filePath.get_base_dir().trim_prefix("res://"),filePath.get_basename(),TranslationServer.get_locale()]
 	var strings : PoolStringArray
 
 	if file.file_exists(localizedStringsPath):

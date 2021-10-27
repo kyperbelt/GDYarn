@@ -1,4 +1,4 @@
-extends Node
+
 
 # var YarnGlobals = load("res://addons/gdyarn/autoloads/execution_states.gd")
 
@@ -15,6 +15,8 @@ var OptionSet = load("res://addons/gdyarn/core/dialogue/option_set.gd")
 const EXECUTION_COMPLETE : String = "execution_complete_command"
 
 var NULL_VALUE = Value.new(null)
+
+
 
 var lineHandler: FuncRef
 var optionsHandler:FuncRef
@@ -104,7 +106,6 @@ func reset():
 	_state = VmState.new()
 
 #continue execution
-#
 
 func resume()->bool:
 	if _currentNode == null :
@@ -308,8 +309,13 @@ func run_instruction(instruction)->bool:
 			var line  = Line.new(instruction.operands[0].value)
 
 			if instruction.operands.size() > 2:
-				pass #formated text options
-			
+				var expressionCount = int(instruction.operands[2].value)
+
+				while expressionCount >0:
+					line.substitutions.append(_state.pop_value().as_string())
+					expressionCount-=1
+
+
 			# line to show and node name
 			_state.currentOptions.append(SimpleEntry.new(line,instruction.operands[1].value))
 		YarnGlobals.ByteCode.ShowOptions:

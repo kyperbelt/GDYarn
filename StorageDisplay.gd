@@ -1,6 +1,6 @@
 extends Label
 
-onready var storage = get_node("../storage")
+onready var storage = get_node("../VariableStorage")
 
 var strings : PoolStringArray = []
 

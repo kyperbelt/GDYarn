@@ -1,12 +1,22 @@
 extends Control
+### This is the default yarn display implementation that comes bundles out of the box
+### for GDYarn. You are able to create your own if you need to but for general game development
+### and prototyping purposes it should be enough.
 
-export(NodePath) var _textDisplay
+class_name YarnDisplay, "res://addons/gdyarn/assets/display.PNG"
+
+
+signal selection_made(selection)
+signal line_finished
+
+export(NodePath) var _yarnRunner
 
 export(Array,NodePath) var _options
 
-const CHARS_PER_WORD : int = 6
+export(NodePath) var _textDisplay
+
 #1 word is  6 chars per second (anything < 0 == instant)
-export(float,-1,100) var _wordsPerSecond = 1
+export(float,-1,100) var _charactersPerSecond= 1
 var lineElapsed : float = 0 
 var totalTime : float = 0
 var lineFinished : bool = false
@@ -19,20 +29,23 @@ var nextLineRequested : bool = false #wether the next line has been requested by
 var textDisplay
 var options : Array = []
 
-var _dialogueRunner
-var _dialogue
-var _currentLine : String
+var dialogueRunner
+var dialogue
+var currentLine : String
 
-#called when a line is first shown
-signal line_shown
-#called when the line is finished displaying
-signal line_finished
 
-signal dialogue_finished
-#called when the line text is changed
-signal text_changed
+var selection := -1
 
 func _ready():
+	dialogueRunner = get_node(_yarnRunner)
+	dialogueRunner.connect("dialogue_started",self,"show_display")
+	dialogueRunner.connect("dialogue_finished",self,"hide_display")
+	dialogueRunner.connect("line_emitted",self,"feed_line")
+	dialogueRunner.connect("options_emitted",self,"feed_options")
+	dialogueRunner.connect("command_emitted",self,"feed_command")
+	connect("line_finished", dialogueRunner, "resume")
+	connect("selection_made", dialogueRunner, "choose")
+
 	for option in _options:
 		var o = get_node(option)
 		options.append(o)
@@ -42,73 +55,93 @@ func _ready():
 	textDisplay.visible = false
 
 
+func show_display():
+	self.visible = true
+
+
+func hide_display():
+	self.visible = false
+
+
 func _process(delta):
 	lineElapsed+=delta
 	if(lineElapsed >= totalTime):
 		if !lineFinished:
-			emit_signal("line_finished")
-			finish_line(false)
-			textDisplay.bbcode_text=( _currentLine if !_currentLine.empty() else textDisplay.bbcode_text)
+			textDisplay.bbcode_text=( currentLine if !currentLine.empty() else textDisplay.bbcode_text)
+			currentLine = ""
 		lineFinished = true
-		
+
 		if _autoNext && !nextLineRequested:
 			autoNextElapsed+=delta
 			if autoNextElapsed >= _autoNextWait:
 				print("autNexted")
-				finish_line(true)
+				finish_line()
 				nextLineRequested = true
 				
 
 	if !lineFinished && textDisplay!=null:
-		var newText : String = _currentLine.substr(0,round(_currentLine.length()*(lineElapsed/totalTime)))
+		var newText : String = currentLine.substr(0,round(currentLine.length()*(lineElapsed/totalTime)))
 		if newText!=textDisplay.get_text():
 			textDisplay.bbcode_text = newText
-			emit_signal("text_changed")
+			# emit_signal("text_changed")
 
-	
+func feed_command(command : String, args: Array, state : GDScriptFunctionState):
+
+	if command == "textspeed" && args.size() > 0:
+		_charactersPerSecond = abs(float(args[0]))
+
+
+	if state.is_valid():
+		state.resume()
+
+	pass
 
 func feed_line(line:String)->bool:
-	if(_currentLine!= null && !_currentLine.empty()):#current line not finished so wait
-		return false
-	_currentLine = line
-	totalTime = line.length() / (_wordsPerSecond * CHARS_PER_WORD)
+	# if(currentLine!= null && !currentLine.empty()):#current line not finished so wait
+	# 	yield(self, "line_finished")
+	print("tried to feed line : %s" % line)
+	currentLine = line
+	totalTime = line.length() / (_charactersPerSecond)
 	lineElapsed = 0
 	autoNextElapsed = 0
 	lineFinished = false
 	nextLineRequested = false
 	if(textDisplay!=null):
-		emit_signal("line_shown")
+		# emit_signal("line_shown")
 		textDisplay.visible = true
 		if(totalTime <= 0):
 			lineFinished = true
+			# emit_signal("line_finished")
 			textDisplay.bbcode_text=(line)
-			emit_signal("line_finished")
+			# emit_signal("line_finished")
 	return true
 
-func finish_line(next_line:bool = true):
-	if _currentLine.empty() && next_line && _textDisplay!=null:
+func finish_line():
+	if currentLine.empty()  && _textDisplay!=null:
 		textDisplay.visible = false
-		emit_signal("dialogue_finished")
-	elif next_line && !_currentLine.empty() && !lineFinished:
+		printerr(" finished line")
+		emit_signal("line_finished")
+	elif !currentLine.empty() && !lineFinished:
 		lineElapsed = totalTime
-		return
+
 
 	#allow user to handle this themselves through 
 	#the use of signals and maybe commmands?
 	# if textDisplay != null:
 	# 	textDisplay.visible = false
-	if(_dialogue.get_exec_state()!=YarnGlobals.ExecutionState.Stopped 
-		&& _dialogue.get_exec_state()!=YarnGlobals.ExecutionState.WaitingForOption):
-		if next_line:
-			_currentLine = ""
-		if _dialogueRunner.next_line.empty():
-			_dialogue.resume()
-		else:
-			_dialogueRunner.consume_line()
-	pass
+	# if(dialogue.get_exec_state()!=YarnGlobals.ExecutionState.Stopped
+	# 	&& dialogue.get_exec_state()!=YarnGlobals.ExecutionState.WaitingForOption):
+	# 	if next_line:
+	# 		currentLine = ""
+	# 	if dialogueRunner.next_line.empty(): # TODO FIXME: Possible unnecessary coupling here. Remove and find some other way to check if there are lines queued up
+	# 		dialogue.resume()
+	# 	else:
+	# 		dialogueRunner.consume_line() # TODO Figure out why we did this
+	# pass
 
 
-func feed_options(options:Array):
+func feed_options(options:Array, dialogue):
+	printerr("tried to feed otpions:%s" %  str(options))
 	for i in range(options.size()):
 		if i >= self.options.size():
 			printerr("Tried to display more options than available gui components")
@@ -120,19 +153,20 @@ func feed_options(options:Array):
 		self.options[i].connect("pressed",self,"select_option",[i])
 		self.options[i].text = options[i]
 
+
 		#self.options[i].set_text(options[i].line.)
 
 func dialogue_finished():
-	_currentLine = ""
+	currentLine = ""
 
 func select_option(selection:int):
 
-	_dialogue.set_selected_option(selection)
+	self.selection = selection
+	emit_signal("selection_made", selection)
+
+	# dialogue.set_selected_option(selection)
 	#hide all option buttons
 	for i in range(options.size()):
 		options[i].visible = false
 
-	finish_line(true)
-
-	
-	
+	# finish_line(true)
