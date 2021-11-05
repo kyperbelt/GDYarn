@@ -289,10 +289,7 @@ func generate_custom_command(node,command):
 		generate_expression(node,command.expression)
 	else:
 		var commandString = command.clientCommand
-		if commandString == "stop":
-			emit(YarnGlobals.ByteCode.Stop,node)
-		else :
-			emit(YarnGlobals.ByteCode.RunCommand,node,[Operand.new(commandString)])
+		emit(YarnGlobals.ByteCode.RunCommand,node,[Operand.new(commandString)])
 		
 
 #compile instructions for linetags and use them 

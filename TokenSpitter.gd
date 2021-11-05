@@ -28,7 +28,7 @@ func _ready():
 	#check for atleast one node start
 	if !headerSep.search(source):
 		printerr("Error parsing yarn input : No headers found")
-		return -1 #TODO: return more specific error code
+		return -1
 
 	var lineNumber: int = 0
 

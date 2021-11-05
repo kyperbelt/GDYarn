@@ -23,6 +23,9 @@ The tree only has [plural {$apples} one="one apple" other="% apples"]! #line:16a
     <<endif>>
 -> this is an option with {3 * 3} inline expressions and [plural {1} one="one"] format function. #line:ec5405a9
 
+After this line there is a 3 second wait. 
+<<wait 3>>
+
 This is another line with a comment at the end.  #line:2f76aae3 // this is some random comment
 What about now #line:f51d47ef
 [[What do we think this is | SomethingElse]] #line:8e052052

@@ -7,7 +7,6 @@
 - [[#Features][Features]]
 - [[#Installation][Installation]]
 - [[#Quickstart][Quickstart]]
-- [[#Todo][Todo]]
 
 * Introduction
 :PROPERTIES:
@@ -47,41 +46,3 @@ After you have installed the plugin (*by putting the gdyarn folder in the addons
 
 ** Running your first yarn program
 You must include a YarnRunner node to the project
-
-* Todo
-:PROPERTIES:
-:CUSTOM_ID: Todo
-:END:
-** TODO Save programs and string data to disk [1/3]
-- [X] Save programs to resource
-- [-] Save strings to resrouce
-  - [X] strings saved as plain text with each line containing a new string
-  - [-] provide some way to interface with godot localization
-- [-] make yarn_runner use resource to store programs paths
-  - [-] once paths are added - compile and save programs to disk
-  - [X] If compiled program exists then dont recompile unless a setting is checked
-
-** TODO Integrate signals into display interface [0/5]
-- [ ] Signals from display to inform runner when to continue
-- [ ] Signals from runner to inform when next_line is ready
-- [ ] signals from variable storage to inform runner when something is changed
-- [ ] Signals should be accesible to other scripts
-
-** TODO library imports as scripts [0/4]
-- [ ] Save library as a resource
-- [ ] Libray has array of script exports
-- [ ] Must explicitly point to library resource in runner
-- [ ] script exports get loaded at runtime
-
-** TODO Create Video Tutorial [0/4]
-- [ ] Explain initial project setup
-- [ ] Explain Libraries
-- [ ] Explain custom commands
-- [ ] Explain gui customization
-
-** TODO Optimization and Improvements [0/5]
-- [ ] Add yarn script analyzer for generated IR
-- [X] change addon folder name : "kyper_gdyarn" ->  "gdyarn"
-- [ ] Better error
-- [ ] Implement [[https://yarnspinner.dev/docs/syntax/#format-functions][Format Functions]]
-- [ ] Add appropriately sized icons to included nodes

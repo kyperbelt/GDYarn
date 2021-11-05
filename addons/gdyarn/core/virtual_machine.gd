@@ -196,8 +196,10 @@ func run_instruction(instruction)->bool:
 		YarnGlobals.ByteCode.RunCommand:
 				var commandText : String = instruction.operands[0].value
 
+				# TODO: allow for inline expressions and format functions in commands
 				if instruction.operands.size() > 1:
 					pass#add format function 
+
 
 				var command = Command.new(commandText)
 
