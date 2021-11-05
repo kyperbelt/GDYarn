@@ -162,8 +162,20 @@ func create_states():
 
 	_states[LINK] = LexerState.new(patterns)
 	_states[LINK].add_transition(YarnGlobals.TokenType.OptionEnd, BASE, true)
+	_states[LINK].add_transition(YarnGlobals.TokenType.ExpressionFunctionStart,"link-ee",true)
+	_states[LINK].add_transition(YarnGlobals.TokenType.FormatFunctionStart,"link-ff",true)
+	_states[LINK].add_transition(YarnGlobals.TokenType.FormatFunctionEnd,LINK,true)
 	_states[LINK].add_transition(YarnGlobals.TokenType.OptionDelimit, link_destination, true)
 	_states[LINK].add_text_rule(YarnGlobals.TokenType.Text)
+
+	_states["link-ff"] = LexerState.new(patterns)
+	_states["link-ff"].add_transition(YarnGlobals.TokenType.FormatFunctionEnd,LINK,true)
+	_states["link-ff"].add_transition(YarnGlobals.TokenType.ExpressionFunctionStart,"link-ee",true)
+	_states["link-ff"].add_text_rule(YarnGlobals.TokenType.Text)
+
+	_states["link-ee"] = LexerState.new(patterns)
+	_states["link-ee"].add_transition(YarnGlobals.TokenType.ExpressionFunctionEnd,LINK)
+	form_expression_state(_states["link-ee"])
 
 	_states[link_destination] = LexerState.new(patterns)
 	_states[link_destination].add_transition(YarnGlobals.TokenType.Identifier)

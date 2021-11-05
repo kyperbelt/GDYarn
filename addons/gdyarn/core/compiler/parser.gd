@@ -207,6 +207,7 @@ class LineNode extends ParseNode:
 
 		while (parser.next_symbol_is([YarnGlobals.TokenType.FormatFunctionStart,YarnGlobals.TokenType.ExpressionFunctionStart,
 			YarnGlobals.TokenType.Text, YarnGlobals.TokenType.TagMarker]) ):
+
 			if FormatFunction.can_parse(parser):
 				var ff = FormatFunction.new(self,parser,substitutions.size())
 				if ff.expression_value != null:
@@ -529,6 +530,8 @@ class OptionStatement extends ParseNode:
 		parser.expect_symbol([YarnGlobals.TokenType.OptionStart])
 
 		line = LineNode.new(self,parser)
+
+		# printerr("option line[", line.line_text, "] has ", line.substitutions.size(), " subs")
 		# printerr("line inside the statement : ",line.line_text)
 		# var tokens := []
 
@@ -540,9 +543,9 @@ class OptionStatement extends ParseNode:
 			var t = parser.expect_symbol([YarnGlobals.TokenType.Text,YarnGlobals.TokenType.Identifier])
 			destination = t.value
 		
-		if line && destination.empty():
+		if destination.empty():
 			destination = line.line_text
-			line == null
+			line = null
 		else:
 			get_node_parent().hasOptions = true
 

@@ -2,171 +2,209 @@ extends Control
 ### This is the default yarn display implementation that comes bundles out of the box
 ### for GDYarn. You are able to create your own if you need to but for general game development
 ### and prototyping purposes it should be enough.
-
 class_name YarnDisplay, "res://addons/gdyarn/assets/display.PNG"
 
+# emit this signal every time the text changes
+signal text_changed
 
-signal selection_made(selection)
+# emit this signal when a new line has started to display
+signal line_started
+
+# emit this signal when a new line has finished displaying
 signal line_finished
 
+#emit this signal when options have begun to be shown
+signal options_shown
+
+# emit this signal once an option
+# has been selected
+signal option_selected
+
+
 export(NodePath) var _yarnRunner
+export(NodePath) var _text
+export(NodePath) var _namePlate
+export(Array, NodePath) var _options setget set_option_nodes
 
-export(Array,NodePath) var _options
-
-export(NodePath) var _textDisplay
-
-#1 word is  6 chars per second (anything < 0 == instant)
-export(float,-1,100) var _charactersPerSecond= 1
-var lineElapsed : float = 0 
-var totalTime : float = 0
-var lineFinished : bool = false
-
-export(bool) var _autoNext = false #automatically move to next line
-export(float,0,2) var _autoNextWait = 1.75 #time to wait until next line when autonext is on
-var autoNextElapsed : float = 0 
-var nextLineRequested : bool = false #wether the next line has been requested by auto next - if yes then dont do it again
-
-var textDisplay
-var options : Array = []
-
-var dialogueRunner
-var dialogue
-var currentLine : String
+# controls the rate at which the text is displayed
+export(int) var _textSpeed = 1
 
 
-var selection := -1
+# just holds variables I dont want too exposed to the outside.
+var config : Configuration = Configuration.new()
+
+var yarnRunner
+var text
+var options : Array
+
+
+# the next line queued up to be displayed.
+var nextLine    : String = ""
+
+# used to check if the current line is finished being displayed
+var lineFinished : bool = true
+var elapsedTime : float = 0
+var totalLineTime : float = 1
+var showingOptions : bool = false
+var shouldContinue : bool = true
+
+var shouldUpdateTotalLineTime : bool = false
+
 
 func _ready():
-	dialogueRunner = get_node(_yarnRunner)
-	dialogueRunner.connect("dialogue_started",self,"show_display")
-	dialogueRunner.connect("dialogue_finished",self,"hide_display")
-	dialogueRunner.connect("line_emitted",self,"feed_line")
-	dialogueRunner.connect("options_emitted",self,"feed_options")
-	dialogueRunner.connect("command_emitted",self,"feed_command")
-	connect("line_finished", dialogueRunner, "resume")
-	connect("selection_made", dialogueRunner, "choose")
 
+	if (_yarnRunner):
+		yarnRunner = get_node(_yarnRunner)
+		yarnRunner.connect("line_emitted", self, "set_line");
+		yarnRunner.connect("node_started", self, "on_node_start")
+		yarnRunner.connect("options_emitted", self, "show_options")
+
+	if (_text):
+		text       = get_node(_text)
+		if text is RichTextLabel:
+			config.richTextLabel = true
+		elif text is Label:
+			pass
+		elif text &&  !text.has_method("set_text"):
+			config.unknownOutput = true
+	else:
+		config.unknownOutput = true
 	for option in _options:
-		var o = get_node(option)
-		options.append(o)
-		o.visible = false
+		options.push_back(get_node(option))
+		if options.back().has_signal("pressed"):
+			options.back().connect("pressed",self,"select_option",[options.size() - 1])
 
-	textDisplay = get_node(_textDisplay)
-	textDisplay.visible = false
+	hide_options()
+
+## set the next line to be displayed
+## if the current line is empty then immediately display the next line
+func set_line(line : String):
+	if config.unknownOutput:
+		return
+	nextLine = line
+	if shouldContinue:
+		shouldContinue = false
+		display_next_line()
 
 
-func show_display():
-	self.visible = true
+
+## display the next line to the text label provided.
+## this sets lineFinished to false, and empties the contents
+## of nextLine into currentLine
+func display_next_line():
+	lineFinished = false
+	if !config.unknownOutput && !nextLine.empty():
+		# TODO add some preprocessing if we have a name plate available and the line contains
+		#      a string in the format "name: content"
+		if config.richTextLabel:
+			text.parse_bbcode(nextLine)
+		else:
+			text.set_text(nextLine)
+
+		shouldUpdateTotalLineTime = true
+		emit_signal("text_changed")
+		emit_signal("line_started")
+		elapsedTime = 0
+		nextLine = ""
 
 
-func hide_display():
-	self.visible = false
+## finish the current line, and if it is already
+## displaying the current line then resume the dialogue
+## which will feed us another line
+func finish_line():
+	if lineFinished:
+		if nextLine.empty():
+			shouldContinue = true
+			yarnRunner.resume()
+		else:
+			display_next_line()
+	else:
+		lineFinished = true
+		elapsedTime+=totalLineTime
+		yarnRunner.resume()
 
+## do this when a new node starts
+## to get the dialogue rolling
+func on_node_start(nodeName):
+	finish_line()
+
+func hide_options():
+	for option in options:
+		option.visible = false
+	showingOptions = false
+
+## display the optionlines to the user
+## by using the options that we set in the inspector
+## if we have less options in the display than the
+## supplied optionlines then we will simply ignore the exra
+## options lines, but we will still display an error
+## to the user as this might be unwanted behavior.
+func show_options(optionLines):
+	if self.options.size() < optionLines.size():
+		printerr("Received [%d] options, but only have[%d] option nodes in yarn_gui." %[optionLines.size(), options.size()])
+
+	for i in range(min(options.size(),optionLines.size())):
+		options[i].set_text(optionLines[i])
+		options[i].visible = true
+
+	showingOptions = true
+
+
+## If we are currently showing options on the display
+## then we may make a selection.
+func select_option(option):
+	yarnRunner.choose(option)
+	hide_options()
+	clear_text()
+	shouldContinue = true
+	finish_line()
+
+func set_runner_node(runner):
+	if get_node(runner) && !get_node(runner).has_signal("line_emitted"):
+		return
+	_yarnRunner = runner
+
+func set_text_node(node):
+	_text = node
+
+
+func set_option_nodes(nodes):
+	_options = nodes
+
+func clear_text():
+	if text:
+		if config.richTextLabel:
+			text.bbcode_text =""
 
 func _process(delta):
-	lineElapsed+=delta
-	if(lineElapsed >= totalTime):
-		if !lineFinished:
-			textDisplay.bbcode_text=( currentLine if !currentLine.empty() else textDisplay.bbcode_text)
-			currentLine = ""
-		lineFinished = true
+	if shouldUpdateTotalLineTime:
+		shouldUpdateTotalLineTime = false
+		totalLineTime = float( text.get_total_character_count()) / float( _textSpeed )
 
-		if _autoNext && !nextLineRequested:
-			autoNextElapsed+=delta
-			if autoNextElapsed >= _autoNextWait:
-				print("autNexted")
-				finish_line()
-				nextLineRequested = true
-				
+	if !lineFinished && !config.unknownOutput:
 
-	if !lineFinished && textDisplay!=null:
-		var newText : String = currentLine.substr(0,round(currentLine.length()*(lineElapsed/totalTime)))
-		if newText!=textDisplay.get_text():
-			textDisplay.bbcode_text = newText
-			# emit_signal("text_changed")
+		if _textSpeed <= 0 || elapsedTime >= totalLineTime:
+			lineFinished = true
+			elapsedTime += totalLineTime
+			emit_signal("line_finished")
+			yarnRunner.resume()
 
-func feed_command(command : String, args: Array, state : GDScriptFunctionState):
+	if(totalLineTime > 0):
+		text.set_percent_visible(elapsedTime / totalLineTime)
+	else:
+		text.set_percent_visible(1.0)
 
-	if command == "textspeed" && args.size() > 0:
-		_charactersPerSecond = abs(float(args[0]))
-
-
-	if state.is_valid():
-		state.resume()
-
+	elapsedTime+= delta
 	pass
 
-func feed_line(line:String)->bool:
-	# if(currentLine!= null && !currentLine.empty()):#current line not finished so wait
-	# 	yield(self, "line_finished")
-	print("tried to feed line : %s" % line)
-	currentLine = line
-	totalTime = line.length() / (_charactersPerSecond)
-	lineElapsed = 0
-	autoNextElapsed = 0
-	lineFinished = false
-	nextLineRequested = false
-	if(textDisplay!=null):
-		# emit_signal("line_shown")
-		textDisplay.visible = true
-		if(totalTime <= 0):
-			lineFinished = true
-			# emit_signal("line_finished")
-			textDisplay.bbcode_text=(line)
-			# emit_signal("line_finished")
-	return true
+class Configuration:
+	# if this is a rich text label then we are going to use
+	# bb text by default , if we change this again at runtime
+	# then we will no longer use bb text
+	var richTextLabel : bool = false
 
-func finish_line():
-	if currentLine.empty()  && _textDisplay!=null:
-		textDisplay.visible = false
-		printerr(" finished line")
-		emit_signal("line_finished")
-	elif !currentLine.empty() && !lineFinished:
-		lineElapsed = totalTime
-
-
-	#allow user to handle this themselves through 
-	#the use of signals and maybe commmands?
-	# if textDisplay != null:
-	# 	textDisplay.visible = false
-	# if(dialogue.get_exec_state()!=YarnGlobals.ExecutionState.Stopped
-	# 	&& dialogue.get_exec_state()!=YarnGlobals.ExecutionState.WaitingForOption):
-	# 	if next_line:
-	# 		currentLine = ""
-	# 	if dialogueRunner.next_line.empty(): # TODO FIXME: Possible unnecessary coupling here. Remove and find some other way to check if there are lines queued up
-	# 		dialogue.resume()
-	# 	else:
-	# 		dialogueRunner.consume_line() # TODO Figure out why we did this
-	# pass
-
-
-func feed_options(options:Array, dialogue):
-	printerr("tried to feed otpions:%s" %  str(options))
-	for i in range(options.size()):
-		if i >= self.options.size():
-			printerr("Tried to display more options than available gui components")
-			break
-		self.options[i].visible = true
-		if self.options[i].is_connected("pressed",self,"select_option"):
-			self.options[i].disconnect("pressed",self,"select_option")
-
-		self.options[i].connect("pressed",self,"select_option",[i])
-		self.options[i].text = options[i]
-
-
-		#self.options[i].set_text(options[i].line.)
-
-func dialogue_finished():
-	currentLine = ""
-
-func select_option(selection:int):
-
-	self.selection = selection
-	emit_signal("selection_made", selection)
-
-	# dialogue.set_selected_option(selection)
-	#hide all option buttons
-	for i in range(options.size()):
-		options[i].visible = false
-
-	# finish_line(true)
+	# if an output is unknown we will expect it to contain
+	# a set_text(text) function and if it does not then we
+	# want to print out an error to the console instead letting the user
+	# know that the output form is invalid.
+	var unknownOutput : bool = false

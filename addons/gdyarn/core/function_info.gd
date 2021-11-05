@@ -1,6 +1,6 @@
 extends Object
 
-var Value : Script = load("res://addons/gdyarn/core/value.gd")
+# var Value : Script = load("res://addons/gdyarn/core/value.gd")
 
 #name of the function
 var name : String

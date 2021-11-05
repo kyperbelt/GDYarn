@@ -10,10 +10,10 @@ signal dialogue_started()
 signal line_emitted(line)
 
 # commands that need to be processed
-signal command_emitted(command, arguments, state)
+signal command_emitted(command, arguments)
 
 # options need to be handled by
-signal options_emitted(options,dialogue)
+signal options_emitted(options)
 
 # dialogue has completed execution
 signal dialogue_finished()
@@ -29,7 +29,7 @@ const Line = preload("res://addons/gdyarn/core/dialogue/line.gd")
 
 # show debug statements
 # export(bool) #TODO removed debug from export to declutter the inspector. Maybe add this somewhere else.
-var debug = true
+var debug = false
 
 export(String) var _startNode = "Start"
 
@@ -95,8 +95,12 @@ func _compile_programs(showTokens : bool, printTree: bool):
 	pass
 
 func resume():
-	_dialogue.resume()
-	printerr("continued")
+	if(_dialogueStarted):
+		_dialogue.resume()
+
+
+func get_dialogue():
+	return _dialogue
 
 func set_program(program):
 	_compiledYarnProgram = program
@@ -109,14 +113,15 @@ func set_program(program):
 
 func _process(delta):
 	if !Engine.editor_hint:
-		var state = _dialogue.get_exec_state()
+		pass
+		# var state = _dialogue.get_exec_state()
 
-		if (_dialogueStarted && 
-			state!=YarnGlobals.ExecutionState.WaitingForOption &&
-			state!=YarnGlobals.ExecutionState.Suspended):
-			_dialogue.resume()
-		else:
-			print(state)
+		# if (_dialogueStarted &&
+		# 	state!=YarnGlobals.ExecutionState.WaitingForOption &&
+		# 	state!=YarnGlobals.ExecutionState.Suspended):
+		# 	_dialogue.resume()
+		# else:
+		# 	print(state)
 
 func _handle_line(line):
 	var text : String =  (_stringTable.get(line.id) as LineInfo).text
@@ -129,6 +134,7 @@ func _handle_line(line):
 	return YarnGlobals.HandlerState.PauseExecution
 
 
+## TODO : add a way to add commands that suspend the run state.
 func _handle_command(command):
 	var commandArgs : PoolStringArray= command.strip_edges().split(' ')
 	var commandLead : String = commandArgs[0]
@@ -139,7 +145,7 @@ func _handle_command(command):
 		print("command<%s> args: %s" % [commandLead, commandArgs])
 
 
-	emit_signal("command_emitted",commandLead, commandArgs, yield())
+	emit_signal("command_emitted",commandLead, commandArgs)
 
 	return YarnGlobals.HandlerState.ContinueExecution
 
@@ -155,7 +161,7 @@ func _handle_options(optionSet):
 		lineOptions.append(
 			YarnGlobals.expand_format_functions(_stringTable[optionSet.options[optionIndex].line.id].text.format(optionSet.options[
 				optionIndex].line.substitutions), TranslationServer.get_locale()))
-	emit_signal("options_emitted",lineOptions,_dialogue)
+	emit_signal("options_emitted",lineOptions)
 	#_dialogue.set_selected_option(0)
 	# if display != null:
 	# 	display.feed_options(lineOptions)
@@ -189,3 +195,9 @@ func start(node : String = _startNode):
 	_dialogueStarted = true
 	_dialogue.set_node(node)
 
+
+func stop():
+	if(_dialogueStarted):
+		_dialogueStarted = false
+		_dialogue.stop()
+		emit_signal("dialogue_finished")

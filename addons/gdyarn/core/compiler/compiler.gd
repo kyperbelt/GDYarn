@@ -187,11 +187,11 @@ func compile_node(program:YarnProgram,parsedNode)->void:
 
 			#if no lingering options we stop
 			if !parsedNode.hasOptions:
-				printerr("no options found")
+				# printerr("no options found")
 				emit(YarnGlobals.ByteCode.Stop,nodeCompiled)
 			else:
 
-				printerr("found options in node %s "% parsedNode.name)
+				# printerr("found options in node %s "% parsedNode.name)
 				#otherwise show and jump to selected
 				emit(YarnGlobals.ByteCode.ShowOptions,nodeCompiled)
 				emit(YarnGlobals.ByteCode.RunNode,nodeCompiled)
@@ -405,7 +405,7 @@ func generate_if(node,ifStatement):
 
 #compile instructions for options
 func generate_option(node,option):
-	print("generating option")
+	# print("generating option")
 	var destination : String = option.destination
 
 	if !option.line:

@@ -317,6 +317,7 @@ func parse_function(segment : String) -> FormatFunctionData:
 
 	# printerr("values:%d params:%d" %[values.size(), params.size()])
 	if params.size() != values.size()-1:
+		printerr("input: " , segment, " params:", params.size(), " values:", values.size())
 		return formatFunctionData._error("Missmatched parameters")
 
 	formatFunctionData.name = validFunction.get_string()

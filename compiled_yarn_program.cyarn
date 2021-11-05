@@ -128,6 +128,30 @@
 "operand_value": 1.0
 } ]
 }, {
+"instruction_op": 8,
+"instruction_operands": [ {
+"operand_type": 3,
+"operand_value": 3.0
+} ]
+}, {
+"instruction_op": 8,
+"instruction_operands": [ {
+"operand_type": 3,
+"operand_value": 3.0
+} ]
+}, {
+"instruction_op": 8,
+"instruction_operands": [ {
+"operand_type": 3,
+"operand_value": 2.0
+} ]
+}, {
+"instruction_op": 13,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "Multiply"
+} ]
+}, {
 "instruction_op": 5,
 "instruction_operands": [ {
 "operand_type": 1,
@@ -137,7 +161,7 @@
 "operand_value": "L4option_2"
 }, {
 "operand_type": 3,
-"operand_value": 1.0
+"operand_value": 2.0
 } ]
 }, {
 "instruction_op": 6,
@@ -368,6 +392,12 @@
 "operand_value": "L10endif"
 } ]
 }, {
+"instruction_op": 14,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "$apples"
+} ]
+}, {
 "instruction_op": 5,
 "instruction_operands": [ {
 "operand_type": 1,
@@ -377,7 +407,19 @@
 "operand_value": "SomethingElse"
 }, {
 "operand_type": 3,
-"operand_value": 0.0
+"operand_value": 1.0
+} ]
+}, {
+"instruction_op": 14,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "$place"
+} ]
+}, {
+"instruction_op": 14,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "$place"
 } ]
 }, {
 "instruction_op": 5,
@@ -389,7 +431,7 @@
 "operand_value": "idkWhat"
 }, {
 "operand_type": 3,
-"operand_value": 0.0
+"operand_value": 2.0
 } ]
 }, {
 "instruction_op": 6,
@@ -400,16 +442,16 @@
 } ],
 "node_labels": {
 "L1": 0,
-"L10endif": 56,
-"L11skip_clause": 54,
-"L2group_end": 45,
-"L3option_1": 23,
-"L4option_2": 43,
-"L5group_end": 33,
-"L6option_1": 29,
-"L7option_2": 31,
-"L8endif": 41,
-"L9skip_clause": 39
+"L10endif": 60,
+"L11skip_clause": 58,
+"L2group_end": 49,
+"L3option_1": 27,
+"L4option_2": 47,
+"L5group_end": 37,
+"L6option_1": 33,
+"L7option_2": 35,
+"L8endif": 45,
+"L9skip_clause": 43
 },
 "node_name": "Start",
 "node_source_id": "",
@@ -464,6 +506,164 @@
 "L13": 0
 },
 "node_name": "idkWhat",
+"node_source_id": "",
+"node_tags": [  ]
+}, {
+"node_instructions": [ {
+"instruction_op": 0,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "L1"
+} ]
+}, {
+"instruction_op": 3,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "line:384e4005"
+}, {
+"operand_type": 3,
+"operand_value": 0.0
+} ]
+}, {
+"instruction_op": 5,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "line:4b8ad31f"
+}, {
+"operand_type": 1,
+"operand_value": "L3option_1"
+}, {
+"operand_type": 3,
+"operand_value": 0.0
+} ]
+}, {
+"instruction_op": 5,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "line:ddb7d56f"
+}, {
+"operand_type": 1,
+"operand_value": "L4option_2"
+}, {
+"operand_type": 3,
+"operand_value": 0.0
+} ]
+}, {
+"instruction_op": 5,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "line:b58d655a"
+}, {
+"operand_type": 1,
+"operand_value": "L5option_3"
+}, {
+"operand_type": 3,
+"operand_value": 0.0
+} ]
+}, {
+"instruction_op": 6,
+"instruction_operands": [  ]
+}, {
+"instruction_op": 2,
+"instruction_operands": [  ]
+}, {
+"instruction_op": 0,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "L3option_1"
+} ]
+}, {
+"instruction_op": 3,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "line:d2a3cd6f"
+}, {
+"operand_type": 3,
+"operand_value": 0.0
+} ]
+}, {
+"instruction_op": 17,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "RickySad"
+} ]
+}, {
+"instruction_op": 1,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "L2group_end"
+} ]
+}, {
+"instruction_op": 0,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "L4option_2"
+} ]
+}, {
+"instruction_op": 1,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "L2group_end"
+} ]
+}, {
+"instruction_op": 0,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "L5option_3"
+} ]
+}, {
+"instruction_op": 1,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "L2group_end"
+} ]
+}, {
+"instruction_op": 0,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "L2group_end"
+} ]
+}, {
+"instruction_op": 12,
+"instruction_operands": [  ]
+}, {
+"instruction_op": 16,
+"instruction_operands": [  ]
+} ],
+"node_labels": {
+"L1": 0,
+"L2group_end": 15,
+"L3option_1": 7,
+"L4option_2": 11,
+"L5option_3": 13
+},
+"node_name": "RickyStart",
+"node_source_id": "",
+"node_tags": [  ]
+}, {
+"node_instructions": [ {
+"instruction_op": 0,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "L6"
+} ]
+}, {
+"instruction_op": 3,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "line:edfbe2ec"
+}, {
+"operand_type": 3,
+"operand_value": 0.0
+} ]
+}, {
+"instruction_op": 16,
+"instruction_operands": [  ]
+} ],
+"node_labels": {
+"L6": 0
+},
+"node_name": "RickySad",
 "node_source_id": "",
 "node_tags": [  ]
 } ]

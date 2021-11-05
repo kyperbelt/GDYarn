@@ -99,6 +99,7 @@ func set_selected_option(id:int)->bool:
 	return true
 
 
+# check if there is currently any options that require resolution
 func has_options()->bool:
 	return _state.currentOptions.size()>0
 
@@ -106,7 +107,6 @@ func reset():
 	_state = VmState.new()
 
 #continue execution
-
 func resume()->bool:
 	if _currentNode == null :
 		printerr("Cannot run dialogue with no node selected")

@@ -10,7 +10,7 @@ position: 332,79
 <<set $apples = ($place*3)^2>>
 
 // expexted result - "I participated in a race and cam in 5th place."
-I participated in a [color=#ff00ff]race[/color] and came in {$place}[ordinal {$place} one="st" two="nd" few="rd" other="th"] place. #line:2693a5e6
+I participated in a [color=#ff00ff]race[/color] and [wave]came in [/wave] {$place}[ordinal {$place} one="st" two="nd" few="rd" other="th"] place. #line:2693a5e6
 // expected result - "The tree only has 2 apples!"
 The tree only has [plural {$apples} one="one apple" other="% apples"]! #line:16a64e75
 
@@ -21,7 +21,7 @@ The tree only has [plural {$apples} one="one apple" other="% apples"]! #line:16a
     <<if true>>
         This is inside a nested if. #line:60d92bc2
     <<endif>>
--> this is an option with {1} inline expressions. #line:ec5405a9
+-> this is an option with {3 * 3} inline expressions and [plural {1} one="one"] format function. #line:ec5405a9
 
 This is another line with a comment at the end.  #line:2f76aae3 // this is some random comment
 What about now #line:f51d47ef
@@ -29,7 +29,7 @@ What about now #line:f51d47ef
 <<if false>>
     [[Idk... | idkWhat]] #line:dae17522
 <<endif>> 
-[[Some other node at the end with [plural {$apples} one="one apple" other="% apples"]. | SomethingElse]] #line:a778c40d
+[[Some other node at the end with [plural {$apples} one="an apple" other="% apples"]. | SomethingElse]] #line:a778c40d
 [[Here we have another option with {$place}[ordinal {$place} one="st" two="nd" few="rd" other="th"] place at attached | idkWhat]] #line:baf7bf62
 ===
 title: SomethingElse

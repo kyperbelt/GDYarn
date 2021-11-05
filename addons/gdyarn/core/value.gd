@@ -1,4 +1,4 @@
-extends Object
+class_name Value
 
 const NULL_STRING : String = "null"
 const FALSE_STRING : String= "false"

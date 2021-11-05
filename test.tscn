@@ -8,6 +8,14 @@
 
 [node name="Node2D" type="Node2D"]
 
+[node name="TestDisplay" parent="." instance=ExtResource( 1 )]
+margin_left = 6.0
+margin_top = 43.0
+margin_right = 6.0
+margin_bottom = 43.0
+_yarnRunner = NodePath("../YarnRunner")
+_textSpeed = 35
+
 [node name="YarnRunner" type="Node" parent="."]
 script = ExtResource( 2 )
 _autoStart = true
@@ -17,17 +25,11 @@ _compiledYarnProgram = ExtResource( 5 )
 [node name="VariableStorage" type="Node" parent="."]
 script = ExtResource( 3 )
 
-[node name="TestDisplay" parent="." instance=ExtResource( 1 )]
-margin_left = 3.0
-margin_right = 3.0
-_yarnRunner = NodePath("../YarnRunner")
-_charactersPerSecond = 61.202
-
 [node name="StorageDisplay" type="Label" parent="."]
-margin_left = 14.0
-margin_top = 310.0
-margin_right = 133.0
-margin_bottom = 510.0
+margin_left = 12.0
+margin_top = 6.0
+margin_right = 131.0
+margin_bottom = 206.0
 script = ExtResource( 4 )
 __meta__ = {
 "_edit_use_anchors_": false

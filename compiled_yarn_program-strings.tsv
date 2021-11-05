@@ -1,8 +1,8 @@
 id	text	file	node	lineNumber	implicit	tags
-line:2693a5e6	I participated in a [color=#ff00ff]race[/color] and came in {0}[ordinal  "{1}"  one="st" two="nd" few="rd" other="th"] place. 	inline_expressions.yarn	Start	7	False	
+line:2693a5e6	I participated in a [color=#ff00ff]race[/color] and [wave]came in [/wave]{0}[ordinal  "{1}"  one="st" two="nd" few="rd" other="th"] place. 	inline_expressions.yarn	Start	7	False	
 line:16a64e75	The tree only has [plural  "{0}"  one="one apple" other="% apples"]! 	inline_expressions.yarn	Start	9	False	
 line:7811acb5	This is one option 	inline_expressions.yarn	Start	11	False	
-line:ec5405a9	this is an option with {0} inline expressions. 	inline_expressions.yarn	Start	18	False	
+line:ec5405a9	this is an option with {0} inline expressions and [plural  "{1}"  one="one"] format function. 	inline_expressions.yarn	Start	18	False	
 line:6cef1363	Interesting Choice 	inline_expressions.yarn	Start	12	False	
 line:35381c14	this is another option 	inline_expressions.yarn	Start	13	False	
 line:25786333	and another hahahahaha 	inline_expressions.yarn	Start	14	False	
@@ -11,7 +11,13 @@ line:2f76aae3	This is another line with a comment at the end.  	inline_expressio
 line:f51d47ef	What about now 	inline_expressions.yarn	Start	21	False	
 line:8e052052	What do we think this is 	inline_expressions.yarn	Start	22	False	
 line:dae17522	Idk... 	inline_expressions.yarn	Start	24	False	
-line:a778c40d	Some other node at the end with [plural {$apples} one="one apple" other="% apples"]. 	inline_expressions.yarn	Start	26	False	
-line:baf7bf62	Here we have another option with {$place}[ordinal {$place} one="st" two="nd" few="rd" other="th"] place at attached 	inline_expressions.yarn	Start	27	False	
+line:a778c40d	Some other node at the end with [plural  "{0}"  one="an apple" other="% apples"]. 	inline_expressions.yarn	Start	26	False	
+line:baf7bf62	Here we have another option with {0}[ordinal  "{1}"  one="st" two="nd" few="rd" other="th"] place at attached 	inline_expressions.yarn	Start	27	False	
 line:4d7ec1f2	This is node is Something Else. 	inline_expressions.yarn	SomethingElse	0	False	
 line:9eda98ba	Idk what this node is. 	inline_expressions.yarn	idkWhat	0	False	
+line:384e4005	Ricky : I am cool. 	ricky.yarn	RickyStart	0	False	
+line:4b8ad31f	nah, i don't think you are. 	ricky.yarn	RickyStart	1	False	
+line:ddb7d56f	ok. 	ricky.yarn	RickyStart	5	False	
+line:b58d655a	Definitely 	ricky.yarn	RickyStart	6	False	
+line:d2a3cd6f	Ricky: NANI! 	ricky.yarn	RickyStart	2	False	
+line:edfbe2ec	Ricky: I am a sad boy. 	ricky.yarn	RickySad	0	False	
