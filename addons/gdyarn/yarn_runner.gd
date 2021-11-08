@@ -18,6 +18,9 @@ signal options_emitted(options)
 # dialogue has completed execution
 signal dialogue_finished()
 
+signal resumed
+
+
 # the node has changed
 signal node_started(nodeName)
 signal node_complete(nodeName)
@@ -49,6 +52,8 @@ var _dialogueStarted : bool = false
 #dialogue flow control
 var next_line : String = ""#extra line will be empty when there is no next line
 
+var waiting : bool = false
+
 
 func _ready():
 	if Engine.editor_hint:
@@ -68,11 +73,6 @@ func _ready():
 			_stringTable = program.yarnStrings
 
 			_dialogue.set_program(program)
-
-			# display = get_node(_displayInterface)
-
-			# display._dialogue = _dialogue
-			# display._dialogueRunner = self
 
 			if(_autoStart):
 				start(_startNode)
@@ -95,9 +95,9 @@ func _compile_programs(showTokens : bool, printTree: bool):
 	pass
 
 func resume():
-	if(_dialogueStarted):
+	emit_signal("resumed")
+	if(_dialogueStarted && !waiting):
 		_dialogue.resume()
-
 
 func get_dialogue():
 	return _dialogue
@@ -136,16 +136,25 @@ func _handle_line(line):
 
 ## TODO : add a way to add commands that suspend the run state.
 func _handle_command(command):
-	var commandArgs : PoolStringArray= command.strip_edges().split(' ')
-	var commandLead : String = commandArgs[0]
-
-	commandArgs.remove(0)
 
 	if debug:
-		print("command<%s> args: %s" % [commandLead, commandArgs])
+		print("command<%s> args: %s" % [command.command, command.args])
 
-
-	emit_signal("command_emitted",commandLead, commandArgs)
+	# If this command is the wait command, we have already vertified that it
+	# has a valid argument in the virtual machine, so all thats left do to is
+	# to begin waiting only after the user has attempted to resume. We also emit
+	# command once it is resumed in order to notify any other interfaces
+	# that make use of the wait command
+	if command.command == "wait":
+		var time : float = float(command.args[0])
+		waiting = true
+		yield(self,"resumed")
+		emit_signal("command_emitted",command.command, command.args)
+		yield(get_tree().create_timer(time),"timeout")
+		waiting = false
+		resume()
+	else:
+		emit_signal("command_emitted",command.command, command.args)
 
 	return YarnGlobals.HandlerState.ContinueExecution
 

@@ -1,4 +1,11 @@
 extends Control
+
+### TODO: Add interpolation to different aspects of this ui
+###        * when ui is shown
+###        * when ui is hidden
+###        * when options are shown
+###        * when options are hidden
+###
 ### This is the default yarn display implementation that comes bundles out of the box
 ### for GDYarn. You are able to create your own if you need to but for general game development
 ### and prototyping purposes it should be enough.
@@ -20,6 +27,11 @@ signal options_shown
 # has been selected
 signal option_selected
 
+# signal emitted when `show_gui` has been called
+signal gui_shown
+
+# signal emitted when `hide_gui` has been called
+signal gui_hidden
 
 export(NodePath) var _yarnRunner
 export(NodePath) var _text
@@ -35,8 +47,8 @@ var config : Configuration = Configuration.new()
 
 var yarnRunner
 var text
+var namePlate
 var options : Array
-
 
 # the next line queued up to be displayed.
 var nextLine    : String = ""
@@ -47,17 +59,29 @@ var elapsedTime : float = 0
 var totalLineTime : float = 1
 var showingOptions : bool = false
 var shouldContinue : bool = true
+var isDialogueFinished : bool = false
 
 var shouldUpdateTotalLineTime : bool = false
 
+var nameRegex : RegEx
+
 
 func _ready():
+
+	nameRegex = RegEx.new()
+	nameRegex.compile("^(?:.*(?=:))")
+	if _namePlate:
+		namePlate = get_node(_namePlate)
+		if !namePlate.has_method("set_text"):
+			namePlate = null
 
 	if (_yarnRunner):
 		yarnRunner = get_node(_yarnRunner)
 		yarnRunner.connect("line_emitted", self, "set_line");
 		yarnRunner.connect("node_started", self, "on_node_start")
 		yarnRunner.connect("options_emitted", self, "show_options")
+		yarnRunner.connect("dialogue_finished", self, "on_dialogue_finished")
+		yarnRunner.connect("command_emitted", self, "on_command")
 
 	if (_text):
 		text       = get_node(_text)
@@ -76,16 +100,53 @@ func _ready():
 
 	hide_options()
 
+func on_dialogue_finished():
+	isDialogueFinished = true
+
+func on_command(command, arguments:Array):
+	if command == "wait":
+		clear_text()
+		emit_signal("line_started")
+
+## make the yarn gui visible and emit the gui shown signal
+func show_gui():
+	emit_signal("gui_shown")
+	self.visible = true
+	isDialogueFinished = false
+	lineFinished = false
+
+## hide the yarn gui and emit the gui hidden signal
+## NOTE: not calling this can break certain things if they are
+## 		 depengint on the gui_hidden signal from the yarn gui.
+func hide_gui():
+	emit_signal("gui_hidden")
+	self.visible = false
+
 ## set the next line to be displayed
 ## if the current line is empty then immediately display the next line
 func set_line(line : String):
 	if config.unknownOutput:
 		return
+
+	var result : RegExMatch = nameRegex.search(line)
+
+	if namePlate:
+		if result:
+			var name : String = result.get_string()
+			line = line.replace(name +':', "")
+			set_name_plate(name)
+		else:
+			namePlate.visible = false
+
+
 	nextLine = line
 	if shouldContinue:
 		shouldContinue = false
 		display_next_line()
 
+func set_name_plate(name : String):
+	namePlate.set_text(name)
+	namePlate.visible = true
 
 
 ## display the next line to the text label provided.
@@ -97,6 +158,7 @@ func display_next_line():
 		# TODO add some preprocessing if we have a name plate available and the line contains
 		#      a string in the format "name: content"
 		if config.richTextLabel:
+			(text as RichTextLabel).percent_visible = 0
 			text.parse_bbcode(nextLine)
 		else:
 			text.set_text(nextLine)
@@ -112,11 +174,18 @@ func display_next_line():
 ## displaying the current line then resume the dialogue
 ## which will feed us another line
 func finish_line():
+	if showingOptions:
+		return
+
+	if isDialogueFinished:
+		hide_gui()
+		return
+
 	if lineFinished:
 		if nextLine.empty():
 			shouldContinue = true
 			yarnRunner.resume()
-		else:
+		elif !nextLine.empty():
 			display_next_line()
 	else:
 		lineFinished = true
@@ -126,7 +195,7 @@ func finish_line():
 ## do this when a new node starts
 ## to get the dialogue rolling
 func on_node_start(nodeName):
-	finish_line()
+	yarnRunner.resume()
 
 func hide_options():
 	for option in options:
@@ -148,6 +217,7 @@ func show_options(optionLines):
 		options[i].visible = true
 
 	showingOptions = true
+	emit_signal("options_shown")
 
 
 ## If we are currently showing options on the display
@@ -158,6 +228,7 @@ func select_option(option):
 	clear_text()
 	shouldContinue = true
 	finish_line()
+	emit_signal("option_selected")
 
 func set_runner_node(runner):
 	if get_node(runner) && !get_node(runner).has_signal("line_emitted"):
@@ -173,8 +244,10 @@ func set_option_nodes(nodes):
 
 func clear_text():
 	if text:
-		if config.richTextLabel:
-			text.bbcode_text =""
+		text.set_text("")
+		text.update()
+	if namePlate:
+		namePlate.visible = false
 
 func _process(delta):
 	if shouldUpdateTotalLineTime:

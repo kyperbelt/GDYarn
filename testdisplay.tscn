@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=2]
+[gd_scene load_steps=17 format=2]
 
 [ext_resource path="res://addons/gdyarn/yarn_gui.gd" type="Script" id=1]
 [ext_resource path="res://exampleAssets/Cairo-Regular.ttf" type="DynamicFontData" id=2]
@@ -6,6 +6,14 @@
 [ext_resource path="res://exampleAssets/buttonLong_brown_pressed.png" type="Texture" id=4]
 [ext_resource path="res://exampleAssets/buttonLong_brown.png" type="Texture" id=5]
 [ext_resource path="res://exampleAssets/panel_brown.png" type="Texture" id=6]
+[ext_resource path="res://exampleAssets/Kenney Pixel.ttf" type="DynamicFontData" id=7]
+[ext_resource path="res://TextContainer.gd" type="Script" id=8]
+[ext_resource path="res://yarn_button.gd" type="Script" id=9]
+
+[sub_resource type="DynamicFont" id=6]
+size = 24
+use_mipmaps = true
+font_data = ExtResource( 2 )
 
 [sub_resource type="StyleBoxTexture" id=2]
 texture = ExtResource( 5 )
@@ -32,11 +40,6 @@ margin_right = 10.7289
 margin_top = 10.7289
 margin_bottom = 15.1179
 
-[sub_resource type="DynamicFont" id=6]
-size = 24
-use_mipmaps = true
-font_data = ExtResource( 2 )
-
 [sub_resource type="StyleBoxTexture" id=5]
 texture = ExtResource( 6 )
 region_rect = Rect2( 0, -0.916206, 102.463, 103.581 )
@@ -44,6 +47,11 @@ margin_left = 22.1533
 margin_right = 25.376
 margin_top = 17.9621
 margin_bottom = 20.9937
+
+[sub_resource type="DynamicFont" id=7]
+size = 48
+use_filter = true
+font_data = ExtResource( 7 )
 
 [sub_resource type="DynamicFont" id=1]
 size = 28
@@ -61,6 +69,7 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 _text = NodePath("VBoxContainer/TextPanel/VBoxContainer/TextContainer/Text")
+_namePlate = NodePath("VBoxContainer/TextPanel/VBoxContainer/Name")
 _options = [ NodePath("VBoxContainer/HBoxContainer/VBoxContainer/option0"), NodePath("VBoxContainer/HBoxContainer/VBoxContainer/option1"), NodePath("VBoxContainer/HBoxContainer/VBoxContainer/option2"), NodePath("VBoxContainer/HBoxContainer/VBoxContainer/option3") ]
 _textSpeed = 12
 
@@ -104,10 +113,10 @@ alignment = 2
 margin_right = 495.0
 margin_bottom = 71.8468
 rect_min_size = Vector2( 0, 40 )
+custom_fonts/font = SubResource( 6 )
 custom_styles/hover = SubResource( 2 )
 custom_styles/pressed = SubResource( 3 )
 custom_styles/normal = SubResource( 4 )
-custom_fonts/font = SubResource( 6 )
 text = "option"
 align = 0
 __meta__ = {
@@ -119,10 +128,10 @@ margin_top = 81.0
 margin_right = 495.0
 margin_bottom = 152.847
 rect_min_size = Vector2( 0, 40 )
+custom_fonts/font = SubResource( 6 )
 custom_styles/hover = SubResource( 2 )
 custom_styles/pressed = SubResource( 3 )
 custom_styles/normal = SubResource( 4 )
-custom_fonts/font = SubResource( 6 )
 text = "option"
 align = 0
 
@@ -131,10 +140,10 @@ margin_top = 162.0
 margin_right = 495.0
 margin_bottom = 233.847
 rect_min_size = Vector2( 0, 40 )
+custom_fonts/font = SubResource( 6 )
 custom_styles/hover = SubResource( 2 )
 custom_styles/pressed = SubResource( 3 )
 custom_styles/normal = SubResource( 4 )
-custom_fonts/font = SubResource( 6 )
 text = "option"
 align = 0
 __meta__ = {
@@ -146,10 +155,10 @@ margin_top = 243.0
 margin_right = 495.0
 margin_bottom = 314.847
 rect_min_size = Vector2( 0, 40 )
+custom_fonts/font = SubResource( 6 )
 custom_styles/hover = SubResource( 2 )
 custom_styles/pressed = SubResource( 3 )
 custom_styles/normal = SubResource( 4 )
-custom_fonts/font = SubResource( 6 )
 text = "option"
 align = 0
 __meta__ = {
@@ -188,7 +197,9 @@ margin_bottom = 36.0
 rect_min_size = Vector2( 180, 0 )
 size_flags_horizontal = 0
 size_flags_vertical = 3
-bbcode_enabled = true
+custom_fonts/normal_font = SubResource( 7 )
+text = "Name"
+scroll_active = false
 
 [node name="TextContainer" type="HBoxContainer" parent="VBoxContainer/TextPanel/VBoxContainer"]
 margin_right = 965.0
@@ -196,11 +207,13 @@ margin_bottom = 224.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 size_flags_stretch_ratio = 4.98
+script = ExtResource( 8 )
 
 [node name="Control" type="Control" parent="VBoxContainer/TextPanel/VBoxContainer/TextContainer"]
 margin_right = 32.0
 margin_bottom = 224.0
 rect_min_size = Vector2( 32, 0 )
+mouse_filter = 1
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.42
 
@@ -208,6 +221,7 @@ size_flags_stretch_ratio = 0.42
 margin_left = 36.0
 margin_right = 940.0
 margin_bottom = 224.0
+mouse_filter = 1
 size_flags_horizontal = 3
 size_flags_vertical = 3
 size_flags_stretch_ratio = 3.92
@@ -221,6 +235,8 @@ __meta__ = {
 margin_left = 944.0
 margin_right = 965.0
 margin_bottom = 224.0
+rect_min_size = Vector2( 21, 0 )
+size_flags_stretch_ratio = 0.29
 alignment = 2
 
 [node name="Button" type="TextureButton" parent="VBoxContainer/TextPanel/VBoxContainer/TextContainer/VBoxContainer"]
@@ -229,5 +245,12 @@ margin_right = 21.0
 margin_bottom = 224.0
 size_flags_vertical = 0
 texture_normal = ExtResource( 3 )
+script = ExtResource( 9 )
+period = 0.8
+amplitude = 5.0
 
+[connection signal="line_finished" from="." to="VBoxContainer/TextPanel/VBoxContainer/TextContainer/VBoxContainer/Button" method="show_button"]
+[connection signal="line_started" from="." to="VBoxContainer/TextPanel/VBoxContainer/TextContainer/VBoxContainer/Button" method="hide_button"]
+[connection signal="options_shown" from="." to="VBoxContainer/TextPanel/VBoxContainer/TextContainer/VBoxContainer/Button" method="hide_button"]
+[connection signal="clicked" from="VBoxContainer/TextPanel/VBoxContainer/TextContainer" to="." method="finish_line"]
 [connection signal="pressed" from="VBoxContainer/TextPanel/VBoxContainer/TextContainer/VBoxContainer/Button" to="." method="finish_line"]

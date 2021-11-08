@@ -1,5 +1,6 @@
+extends Object
 
-
+signal resumed
 # var YarnGlobals = load("res://addons/gdyarn/autoloads/execution_states.gd")
 
 var FunctionInfo = load("res://addons/gdyarn/core/function_info.gd")
@@ -17,7 +18,6 @@ const EXECUTION_COMPLETE : String = "execution_complete_command"
 var NULL_VALUE = Value.new(null)
 
 
-
 var lineHandler: FuncRef
 var optionsHandler:FuncRef
 var commandHandler:FuncRef
@@ -28,6 +28,8 @@ var dialogueCompleteHandler:FuncRef
 var _dialogue 
 var _program 
 var _state 
+
+var waiting : bool = false
 
 var _currentNode 
 
@@ -108,6 +110,7 @@ func reset():
 
 #continue execution
 func resume()->bool:
+
 	if _currentNode == null :
 		printerr("Cannot run dialogue with no node selected")
 		return false
@@ -133,6 +136,10 @@ func resume()->bool:
 		printerr("Cannot run withour an nodeCompleteHandler")	
 		return false
 
+
+	emit_signal("resumed")
+	if waiting:
+		return false
 
 	executionState = YarnGlobals.ExecutionState.Running
 	
@@ -203,9 +210,21 @@ func run_instruction(instruction)->bool:
 
 				var command = Command.new(commandText)
 
-				var pause = commandHandler.call_func(command) as int
-				if pause == YarnGlobals.HandlerState.PauseExecution:
-					executionState = YarnGlobals.ExecutionState.Suspended
+				## here we handle built in commands like wait
+				if command.command == "wait":
+					if command.args.size() >= 1:
+						var time : float = float(command.args[0])
+						if time > 0:
+							waiting = true
+							var pause = commandHandler.call_func(command)
+							if pause is GDScriptFunctionState || pause == YarnGlobals.HandlerState.PauseExecution:
+								executionState = YarnGlobals.ExecutionState.Suspended
+							yield(self, "resumed")
+							waiting = false
+				else:
+					var pause = commandHandler.call_func(command)
+					if pause is GDScriptFunctionState || pause == YarnGlobals.HandlerState.PauseExecution:
+						executionState = YarnGlobals.ExecutionState.Suspended
 
 				
 		YarnGlobals.ByteCode.PushString:
@@ -351,6 +370,7 @@ func run_instruction(instruction)->bool:
 			return false
 
 	return true
+
 
 class VmState:
 	var Value = load("res://addons/gdyarn/core/value.gd")

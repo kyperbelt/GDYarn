@@ -13,15 +13,6 @@
 
 
 
-<a id="orgba9710e"></a>
-
-# Contents
-
--   [Introduction](#Introduction)
--   [Features](#Features)
--   [Installation](#Installation)
--   [Quickstart](#Quickstart)
-
 
 <a id="Introduction"></a>
 

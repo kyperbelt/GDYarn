@@ -6,4 +6,4 @@
 script = ExtResource( 1 )
 _programName = "compiled_yarn_program"
 _directory = "res://"
-_yarnPrograms = [ "res://addons/gdyarn/examples/inline_expressions.yarn", "res://addons/gdyarn/examples/ricky.yarn" ]
+_yarnPrograms = [ "res://exampleAssets/inline_expressions.yarn" ]

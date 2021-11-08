@@ -1,0 +1,11 @@
+title: Start
+tags: 
+colorID: 0
+position: 120,-245
+---
+Do you like Godot?
+-> Yes
+    Right on!
+-> No
+    Well, thats unfortunate...
+===

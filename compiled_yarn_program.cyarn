@@ -320,6 +320,21 @@
 "instruction_op": 3,
 "instruction_operands": [ {
 "operand_type": 1,
+"operand_value": "line:97827440"
+}, {
+"operand_type": 3,
+"operand_value": 0.0
+} ]
+}, {
+"instruction_op": 4,
+"instruction_operands": [ {
+"operand_type": 1,
+"operand_value": "wait 3"
+} ]
+}, {
+"instruction_op": 3,
+"instruction_operands": [ {
+"operand_type": 1,
 "operand_value": "line:2f76aae3"
 }, {
 "operand_type": 3,
@@ -442,8 +457,8 @@
 } ],
 "node_labels": {
 "L1": 0,
-"L10endif": 60,
-"L11skip_clause": 58,
+"L10endif": 62,
+"L11skip_clause": 60,
 "L2group_end": 49,
 "L3option_1": 27,
 "L4option_2": 47,
@@ -506,164 +521,6 @@
 "L13": 0
 },
 "node_name": "idkWhat",
-"node_source_id": "",
-"node_tags": [  ]
-}, {
-"node_instructions": [ {
-"instruction_op": 0,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "L1"
-} ]
-}, {
-"instruction_op": 3,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "line:384e4005"
-}, {
-"operand_type": 3,
-"operand_value": 0.0
-} ]
-}, {
-"instruction_op": 5,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "line:4b8ad31f"
-}, {
-"operand_type": 1,
-"operand_value": "L3option_1"
-}, {
-"operand_type": 3,
-"operand_value": 0.0
-} ]
-}, {
-"instruction_op": 5,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "line:ddb7d56f"
-}, {
-"operand_type": 1,
-"operand_value": "L4option_2"
-}, {
-"operand_type": 3,
-"operand_value": 0.0
-} ]
-}, {
-"instruction_op": 5,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "line:b58d655a"
-}, {
-"operand_type": 1,
-"operand_value": "L5option_3"
-}, {
-"operand_type": 3,
-"operand_value": 0.0
-} ]
-}, {
-"instruction_op": 6,
-"instruction_operands": [  ]
-}, {
-"instruction_op": 2,
-"instruction_operands": [  ]
-}, {
-"instruction_op": 0,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "L3option_1"
-} ]
-}, {
-"instruction_op": 3,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "line:d2a3cd6f"
-}, {
-"operand_type": 3,
-"operand_value": 0.0
-} ]
-}, {
-"instruction_op": 17,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "RickySad"
-} ]
-}, {
-"instruction_op": 1,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "L2group_end"
-} ]
-}, {
-"instruction_op": 0,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "L4option_2"
-} ]
-}, {
-"instruction_op": 1,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "L2group_end"
-} ]
-}, {
-"instruction_op": 0,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "L5option_3"
-} ]
-}, {
-"instruction_op": 1,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "L2group_end"
-} ]
-}, {
-"instruction_op": 0,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "L2group_end"
-} ]
-}, {
-"instruction_op": 12,
-"instruction_operands": [  ]
-}, {
-"instruction_op": 16,
-"instruction_operands": [  ]
-} ],
-"node_labels": {
-"L1": 0,
-"L2group_end": 15,
-"L3option_1": 7,
-"L4option_2": 11,
-"L5option_3": 13
-},
-"node_name": "RickyStart",
-"node_source_id": "",
-"node_tags": [  ]
-}, {
-"node_instructions": [ {
-"instruction_op": 0,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "L6"
-} ]
-}, {
-"instruction_op": 3,
-"instruction_operands": [ {
-"operand_type": 1,
-"operand_value": "line:edfbe2ec"
-}, {
-"operand_type": 3,
-"operand_value": 0.0
-} ]
-}, {
-"instruction_op": 16,
-"instruction_operands": [  ]
-} ],
-"node_labels": {
-"L6": 0
-},
-"node_name": "RickySad",
 "node_source_id": "",
 "node_tags": [  ]
 } ]
