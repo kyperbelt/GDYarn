@@ -33,6 +33,9 @@ GD Yarn is an implementation of [YarnSpinner](https://yarnspinner.dev) completel
 # Features
 
 -   [X] Compile multiple Yarn files into a single Program
+-   [X] Inline Expression
+-   [X] Format Functions
+-   [X] Pluralisation
 -   [ ] Persistent Variable Storage (currently can only be done manually)
 -   [ ] Custom Commands (partial implementation complete)
 -   [ ] Library Extensions (coming soon)
