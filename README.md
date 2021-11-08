@@ -26,6 +26,7 @@ GD Yarn is a [Godot](https://godotengine.org/) plugin that allows you to create 
 
 GD Yarn is an implementation of [YarnSpinner](https://yarnspinner.dev) completely written in [GDScript](https://docs.godotengine.org/en/stable/getting_started/scripting/gdscript/gdscript_basics.html). The project aims to be as feature complete as possible compared to the c# version but may forgo certain things in lieu of similar alternatives that make it blend better with the Godot ecosystem.
 
+![Exmaple of Running a Dialogue](https://raw.githubusercontent.com/kyperbelt/GDYarn/main/images/yarn_running_dialogue.gif)
 
 <a id="Features"></a>
 
