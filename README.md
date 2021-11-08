@@ -39,7 +39,6 @@ GD Yarn is an implementation of [YarnSpinner](https://yarnspinner.dev) completel
 -   [ ] Persistent Variable Storage (currently can only be done manually)
 -   [ ] Custom Commands (partial implementation complete)
 -   [ ] Library Extensions (coming soon)
--   [X] Format functions
 -   [X] Option Links
 -   [X] Shortcut Options
 -   [ ] Localization (coming soon)
