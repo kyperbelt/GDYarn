@@ -82,7 +82,7 @@ Make sure to enable the addon by going to `Project Tab -> Project Settings -> Pl
 
 ## Complete Beginner to YarnSpinner?
 
-Checkout the official [Yarnspinner Tutorial](https://yarnspinner.dev/docs/tutorial/) page to get started writing interactive narratives!
+Checkout the official [Yarnspinner Tutorial](https://yarnspinner.dev/docs/writing/) page to get started writing interactive narratives!
 Read the introduction pages up until you hit the Unity stuff (we don&rsquo;t need that since we are not working in Unity).
 Also make sure to checkout the syntax Reference for a comprehensive list of the yarn languages capabilities.
 
