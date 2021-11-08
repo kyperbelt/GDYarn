@@ -6,7 +6,7 @@
 :PROPERTIES:
 :CUSTOM_ID: Introduction
 :END:
-GD Yarn is a godot plugin that allows you to create interactive dialogues using a simple markup language with strong similarities to [[https://twinery.org/][twine]]. It is easy enough to get, but powerful enough to take your games to the next level with branching narratives that can change based on user interactions.
+GD Yarn is a [[https://godotengine.org/][Godot]] plugin that allows you to create interactive dialogues using a simple markup language with strong similarities to [[https://twinery.org/][twine]]. It is easy enough to get, but powerful enough to take your games to the next level with branching narratives that can change based on user interactions.
 
 GD Yarn is an implementation of [[https://yarnspinner.dev][YarnSpinner]] completely written in [[https://docs.godotengine.org/en/stable/getting_started/scripting/gdscript/gdscript_basics.html][GDScript]]. The project aims to be as feature complete as possible compared to the c# version but may forgo certain things in lieu of similar alternatives that make it blend better with the Godot ecosystem.
 
@@ -28,15 +28,34 @@ GD Yarn is an implementation of [[https://yarnspinner.dev][YarnSpinner]] complet
 :PROPERTIES:
 :CUSTOM_ID: Installation
 :END:
-** Install from AssetLib
-** Install from GitHub
+
+*** Install from AssetLib
+You can install GDYarn straight from the Godot AssetLib tab. Only the contents of the addons directory are required in order to use the addon, but you can use the rest of the items in the project as references and examples.
+
+
+*** Install from GitHub
+Go to the folder where you want to download this project to and cloning it using your preferred method.
+
+For more information regarding this process checkout the official [[https://docs.godotengine.org/en/stable/tutorials/plugins/editor/installing_plugins.html][Godot Documentation]] regarding addon installation.
+
+*** After
+Make sure to enable the addon by going to ~Project Tab -> Project Settings -> Plugins~.
 
 * Quickstart
 :PROPERTIES:
 :CUSTOM_ID: Quickstart
 :END:
+** Complete Beginner to YarnSpinner?
+Checkout the official [[https://yarnspinner.dev/docs/tutorial/][Yarnspinner Tutorial]] page to get started writing interactive narratives!
+
+Read the introduction pages up until you hit the Unity stuff (we don't need that since we are not working in Unity).
+
+Also make sure to checkout the syntax Reference for a comprehensive list of the yarn languages capabilities.
+
+
+:warn: Some functionality might be missing.
+
 ** Setup
 After you have installed the plugin (*by putting the gdyarn folder in the addons directory*), make sure that the addon is enabled in the `ProjectSettings -> Plugins` tab.
-
 ** Running your first yarn program
 You must include a YarnRunner node to the project
