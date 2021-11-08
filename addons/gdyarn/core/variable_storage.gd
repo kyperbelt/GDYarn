@@ -2,6 +2,10 @@ extends Node
 
 class_name VariableStorage, "res://addons/gdyarn/assets/storage.png"
 
+# emitted when a call to set_value has been made
+# will also pass in the name of the set value
+signal value_set(valName)
+
 var variables : Dictionary = {} setget _set_vars,_get_vars
 
 func _ready():
@@ -13,6 +17,7 @@ func set_value(name:String,value):
 		variables[name] = Value.new(value)
 	else:
 		variables[name] = value
+	emit_signal("value_set",name)
 
 # internal function to set the value in the storage - to be used by the virtual machine
 func _set_value_(name: String,value):
@@ -48,7 +53,7 @@ func var_names()->Array:
 
 # This should is just one way to help storage perist between scenes
 # TODO:
-#      conver the data contained in this storage into a string
+#      convert the data contained in this storage into a string
 func convert_to_string_data()->String:
 	return ""
 

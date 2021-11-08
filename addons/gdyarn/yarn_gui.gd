@@ -65,6 +65,7 @@ var shouldUpdateTotalLineTime : bool = false
 
 var nameRegex : RegEx
 
+var lastVisibleChars : int = 0
 
 func _ready():
 
@@ -158,6 +159,7 @@ func display_next_line():
 		# TODO add some preprocessing if we have a name plate available and the line contains
 		#      a string in the format "name: content"
 		if config.richTextLabel:
+			lastVisibleChars = 0
 			(text as RichTextLabel).percent_visible = 0
 			text.parse_bbcode(nextLine)
 		else:
@@ -254,6 +256,7 @@ func _process(delta):
 		shouldUpdateTotalLineTime = false
 		totalLineTime = float( text.get_total_character_count()) / float( _textSpeed )
 
+
 	if !lineFinished && !config.unknownOutput:
 
 		if _textSpeed <= 0 || elapsedTime >= totalLineTime:
@@ -264,6 +267,9 @@ func _process(delta):
 
 	if(totalLineTime > 0):
 		text.set_percent_visible(elapsedTime / totalLineTime)
+		if lastVisibleChars != text.visible_characters:
+			emit_signal("text_changed")
+		lastVisibleChars = text.visible_characters
 	else:
 		text.set_percent_visible(1.0)
 
