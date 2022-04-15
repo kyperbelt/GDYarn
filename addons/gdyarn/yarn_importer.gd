@@ -3,7 +3,7 @@ extends EditorImportPlugin
 
 class_name YarnImporter
 
-const YARN_TRACKER_PATH := "res://.tracked_yarn_files"
+const YARN_TRACKER_PATH := "res://addons/gdyarn/.tracked_yarn_files"
 
 # Called when the node enters the scene tree for the first time.
 func _ready():

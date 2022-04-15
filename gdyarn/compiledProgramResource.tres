@@ -5,5 +5,5 @@
 [resource]
 script = ExtResource( 1 )
 _programName = "compiled_yarn_program"
-_directory = "res://"
-_yarnPrograms = [ "res://exampleAssets/inline_expressions.yarn" ]
+_directory = "res://gdyarn/"
+_yarnPrograms = [ "res://gdyarn/exampleAssets/inline_expressions.yarn" ]

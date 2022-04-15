@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/panel_brown.png-737ae1e4bca5b9d18a84a2439902ffb0.stex"
+path="res://.import/icon.png-ef90ac20d63c2ebd220a57712ecb8e3e.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://exampleAssets/panel_brown.png"
-dest_files=[ "res://.import/panel_brown.png-737ae1e4bca5b9d18a84a2439902ffb0.stex" ]
+source_file="res://gdyarn/icon.png"
+dest_files=[ "res://.import/icon.png-ef90ac20d63c2ebd220a57712ecb8e3e.stex" ]
 
 [params]
 
@@ -28,6 +28,7 @@ process/fix_alpha_border=true
 process/premult_alpha=false
 process/HDR_as_SRGB=false
 process/invert_color=false
+process/normal_map_invert_y=false
 stream=false
 size_limit=0
 detect_3d=true
