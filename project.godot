@@ -57,8 +57,8 @@ _global_script_class_icons={
 [application]
 
 config/name="GDYarn"
-run/main_scene="res://test.tscn"
-config/icon="res://icon.png"
+run/main_scene="res://gdyarn/test.tscn"
+config/icon="res://gdyarn/icon.png"
 
 [autoload]
 

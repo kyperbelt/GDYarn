@@ -1,14 +1,15 @@
 [gd_scene load_steps=17 format=2]
 
 [ext_resource path="res://addons/gdyarn/yarn_gui.gd" type="Script" id=1]
-[ext_resource path="res://exampleAssets/Cairo-Regular.ttf" type="DynamicFontData" id=2]
-[ext_resource path="res://exampleAssets/arrowBeige_right.png" type="Texture" id=3]
-[ext_resource path="res://exampleAssets/buttonLong_brown_pressed.png" type="Texture" id=4]
-[ext_resource path="res://exampleAssets/buttonLong_brown.png" type="Texture" id=5]
-[ext_resource path="res://exampleAssets/panel_brown.png" type="Texture" id=6]
-[ext_resource path="res://exampleAssets/Kenney Pixel.ttf" type="DynamicFontData" id=7]
-[ext_resource path="res://TextContainer.gd" type="Script" id=8]
-[ext_resource path="res://yarn_button.gd" type="Script" id=9]
+[ext_resource path="res://gdyarn/exampleAssets/Cairo-Regular.ttf" type="DynamicFontData" id=2]
+[ext_resource path="res://gdyarn/exampleAssets/arrowBeige_right.png" type="Texture" id=3]
+[ext_resource path="res://gdyarn/exampleAssets/buttonLong_brown_pressed.png" type="Texture" id=4]
+[ext_resource path="res://gdyarn/exampleAssets/buttonLong_brown.png" type="Texture" id=5]
+[ext_resource path="res://gdyarn/exampleAssets/panel_brown.png" type="Texture" id=6]
+[ext_resource path="res://gdyarn/exampleAssets/Kenney Pixel.ttf" type="DynamicFontData" id=7]
+[ext_resource path="res://gdyarn/TextContainer.gd" type="Script" id=8]
+[ext_resource path="res://gdyarn/yarn_button.gd" type="Script" id=9]
+
 
 [sub_resource type="DynamicFont" id=6]
 size = 24
