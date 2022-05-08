@@ -9,19 +9,20 @@ const DEFAULT_START: String = "Start"
 const YarnProgram = preload("res://addons/gdyarn/core/program/program.gd")
 const VirtualMachine = preload("res://addons/gdyarn/core/virtual_machine.gd")
 # const YarnLibrary = preload("res://addons/gdyarn/core/library.gd")
+
+var library
+var executionComplete: bool
+
 var _variableStorage
 
 var _debugLog: FuncRef
 var _errLog: FuncRef
 
 var _program: YarnProgram
-var library
 
 var _vm: VirtualMachine
 
 var _visitedNodeCount: Dictionary = {}
-
-var executionComplete: bool
 
 
 func _init(variableStorage):

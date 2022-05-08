@@ -3,6 +3,8 @@ extends Object
 signal resumed
 # var YarnGlobals = load("res://addons/gdyarn/autoloads/execution_states.gd")
 
+const EXECUTION_COMPLETE: String = "execution_complete_command"
+
 var FunctionInfo = load("res://addons/gdyarn/core/function_info.gd")
 var Value = load("res://addons/gdyarn/core/value.gd")
 var YarnProgram = load("res://addons/gdyarn/core/program/program.gd")
@@ -13,8 +15,6 @@ var Command = load("res://addons/gdyarn/core/dialogue/command.gd")
 var Option = load("res://addons/gdyarn/core/dialogue/option.gd")
 var OptionSet = load("res://addons/gdyarn/core/dialogue/option_set.gd")
 
-const EXECUTION_COMPLETE: String = "execution_complete_command"
-
 var NULL_VALUE = Value.new(null)
 
 var lineHandler: FuncRef
@@ -24,15 +24,15 @@ var nodeStartHandler: FuncRef
 var nodeCompleteHandler: FuncRef
 var dialogueCompleteHandler: FuncRef
 
+var waiting: bool = false
+
+var executionState = YarnGlobals.ExecutionState.Stopped
+
 var _dialogue
 var _program
 var _state
 
-var waiting: bool = false
-
 var _currentNode
-
-var executionState = YarnGlobals.ExecutionState.Stopped
 
 
 func _init(dialogue):

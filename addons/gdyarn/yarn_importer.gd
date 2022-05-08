@@ -1,7 +1,6 @@
 tool
-extends EditorImportPlugin
-
 class_name YarnImporter
+extends EditorImportPlugin
 
 const YARN_TRACKER_PATH := "res://.tracked_yarn_files"
 

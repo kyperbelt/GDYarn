@@ -1,7 +1,6 @@
 tool
-extends Resource
-
 class_name CompiledYarnProgram
+extends Resource
 
 const ProgramUtils = preload("res://addons/gdyarn/core/program/program_utils.gd")
 const YarnProgram = ProgramUtils.YarnProgram
@@ -16,13 +15,6 @@ func _init():
 	pass
 
 
-func _load_program(
-	p: YarnProgram, source: String, fileName: String, showTokens: bool, printSyntax: bool
-) -> int:
-	var YarnCompiler = load("res://addons/gdyarn/core/compiler/compiler.gd")
-	return YarnCompiler.compile_string(source, fileName, p, showTokens, printSyntax)
-
-
 func set_dir(value):
 	if value.begins_with("res://"):
 		var dirCheck = Directory.new()
@@ -34,6 +26,13 @@ func set_dir(value):
 
 func set_program_name(value):
 	_programName = value
+
+
+func _load_program(
+	p: YarnProgram, source: String, fileName: String, showTokens: bool, printSyntax: bool
+) -> int:
+	var YarnCompiler = load("res://addons/gdyarn/core/compiler/compiler.gd")
+	return YarnCompiler.compile_string(source, fileName, p, showTokens, printSyntax)
 
 
 # compile all the program files into a singular program

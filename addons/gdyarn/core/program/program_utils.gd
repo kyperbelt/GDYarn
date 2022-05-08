@@ -69,6 +69,26 @@ static func export_program(program, filePath):
 	pass
 
 
+#combine all the programs in the provided array
+static func combine_programs(programs: Array = []):
+	if programs.empty():
+		printerr("no programs to combine - you failure")
+		return null
+
+	var YarnProgram = load("res://addons/gdyarn/core/program/program.gd")
+	var p = YarnProgram.new()
+	for program in programs:
+		for nodeKey in program.yarnNodes.keys():
+			if p.has_yarn_node(nodeKey):
+				printerr("Program with duplicate node names %s " % nodeKey)
+				return null
+			p.yarnNodes[nodeKey] = program.yarnNodes[nodeKey]
+
+			YarnGlobals.get_script().merge_dir(p.yarnStrings, program.yarnStrings)
+
+	return p
+
+
 static func _serialize_program(program) -> Dictionary:
 	var result := {}
 	result[PROGRAM_NAME] = program.programName
@@ -295,23 +315,3 @@ static func _load_operand(operand):
 	var op = Operand.new(value)
 
 	return op
-
-
-#combine all the programs in the provided array
-static func combine_programs(programs: Array = []):
-	if programs.empty():
-		printerr("no programs to combine - you failure")
-		return null
-
-	var YarnProgram = load("res://addons/gdyarn/core/program/program.gd")
-	var p = YarnProgram.new()
-	for program in programs:
-		for nodeKey in program.yarnNodes.keys():
-			if p.has_yarn_node(nodeKey):
-				printerr("Program with duplicate node names %s " % nodeKey)
-				return null
-			p.yarnNodes[nodeKey] = program.yarnNodes[nodeKey]
-
-			YarnGlobals.get_script().merge_dir(p.yarnStrings, program.yarnStrings)
-
-	return p

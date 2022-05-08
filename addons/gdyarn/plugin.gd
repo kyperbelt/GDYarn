@@ -1,6 +1,9 @@
 tool
 extends EditorPlugin
 
+const CompilerInspector: Script = preload("res://addons/gdyarn/ui/compiler_inspector.gd")
+const LocalizerScene: PackedScene = preload("res://addons/gdyarn/ui/LocalizerGui.tscn")
+
 var Autoloads: Dictionary = {
 	"NumberPlurals": "res://addons/gdyarn/autoloads/number_plurals.gd",
 	"YarnGlobals": "res://addons/gdyarn/autoloads/execution_states.gd",
@@ -12,9 +15,6 @@ var Nodes: Dictionary = {
 	"YarnRunner":
 	["Node", "res://addons/gdyarn/yarn_runner.gd", "res://addons/gdyarn/assets/runner.PNG"],
 }
-
-const CompilerInspector: Script = preload("res://addons/gdyarn/ui/compiler_inspector.gd")
-const LocalizerScene: PackedScene = preload("res://addons/gdyarn/ui/LocalizerGui.tscn")
 
 var localizerGui
 var compilerInspector

@@ -1,8 +1,8 @@
 extends Label
 
-onready var storage = get_node("../VariableStorage")
-
 var strings: PoolStringArray = []
+
+onready var storage = get_node("../VariableStorage")
 
 
 func _ready():

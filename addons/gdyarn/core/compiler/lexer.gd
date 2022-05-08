@@ -13,8 +13,9 @@ const ASSIGNMENT: String = "assignment"
 const OPTION: String = "option"
 const DESTINATION: String = "destination"
 const FORMAT_FUNCTION: String = "format"
+const WHITESPACE: String = "\\s*"
 
-var WHITESPACE: String = "\\s*"
+var error = OK
 
 var _states: Dictionary = {}
 var _defaultState: LexerState
@@ -23,8 +24,6 @@ var _currentState: LexerState
 
 var _indentStack: Array = []
 var _shouldTrackIndent: bool = false
-
-var error = OK
 
 
 func _init():

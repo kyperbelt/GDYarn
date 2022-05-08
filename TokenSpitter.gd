@@ -1,9 +1,9 @@
 extends Node
 
-export(String, FILE, "*.yarn") var yarnFile
-
 const Parser = preload("res://addons/gdyarn/core/compiler/parser.gd")
 const Lexer = Parser.Lexer  #preload("res://addons/gdyarn/core/compiler/lexer.gd")
+
+export(String, FILE, "*.yarn") var yarnFile
 
 
 func _ready():

@@ -101,6 +101,30 @@ func _ready():
 	hide_options()
 
 
+func _process(delta):
+	if shouldUpdateTotalLineTime:
+		shouldUpdateTotalLineTime = false
+		totalLineTime = float(text.get_total_character_count()) / float(_textSpeed)
+
+	if !lineFinished && !config.unknownOutput:
+		if _textSpeed <= 0 || elapsedTime >= totalLineTime:
+			lineFinished = true
+			elapsedTime += totalLineTime
+			emit_signal("line_finished")
+			yarnRunner.resume()
+
+	if totalLineTime > 0:
+		text.set_percent_visible(elapsedTime / totalLineTime)
+		if lastVisibleChars != text.visible_characters:
+			emit_signal("text_changed")
+		lastVisibleChars = text.visible_characters
+	else:
+		text.set_percent_visible(1.0)
+
+	elapsedTime += delta
+	pass
+
+
 func on_dialogue_finished():
 	isDialogueFinished = true
 
@@ -265,30 +289,6 @@ func clear_text():
 		text.update()
 	if namePlate:
 		namePlate.visible = false
-
-
-func _process(delta):
-	if shouldUpdateTotalLineTime:
-		shouldUpdateTotalLineTime = false
-		totalLineTime = float(text.get_total_character_count()) / float(_textSpeed)
-
-	if !lineFinished && !config.unknownOutput:
-		if _textSpeed <= 0 || elapsedTime >= totalLineTime:
-			lineFinished = true
-			elapsedTime += totalLineTime
-			emit_signal("line_finished")
-			yarnRunner.resume()
-
-	if totalLineTime > 0:
-		text.set_percent_visible(elapsedTime / totalLineTime)
-		if lastVisibleChars != text.visible_characters:
-			emit_signal("text_changed")
-		lastVisibleChars = text.visible_characters
-	else:
-		text.set_percent_visible(1.0)
-
-	elapsedTime += delta
-	pass
 
 
 class Configuration:

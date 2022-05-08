@@ -18,6 +18,8 @@ const INVALID_HEADER: int = 0x04
 const DUPLICATE_NODES_IN_PROGRAM: int = 0x08
 const ERR_COMPILATION_FAILED: int = 0x10
 
+var error = OK
+
 var _errors: int
 var _lastError: int
 
@@ -29,11 +31,10 @@ var _fileName: String
 var _containsImplicitStringTags: bool
 var _labelCount: int = 0
 
-var error = OK
-
 #<String, LineInfo>
 var _stringTable: Dictionary = {}
 var _stringCount: int = 0
+
 #<int, YarnGlobals.TokenType>
 var _tokens: Dictionary = {}
 

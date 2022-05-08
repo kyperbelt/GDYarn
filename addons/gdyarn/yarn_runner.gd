@@ -29,10 +29,6 @@ signal node_complete(nodeName)
 const LineInfo = preload("res://addons/gdyarn/core/program/yarn_line.gd")
 const Line = preload("res://addons/gdyarn/core/dialogue/line.gd")
 
-# show debug statements
-# export(bool) #TODO removed debug from export to declutter the inspector. Maybe add this somewhere else.
-var debug = false
-
 export(String) var _startNode = "Start"
 
 export(bool) var _autoStart = false
@@ -42,16 +38,20 @@ export(NodePath) var _variableStorage
 # String is a path to a PNG file in the global filesystem.
 export(Resource) var _compiledYarnProgram setget set_program
 
-var _stringTable: Dictionary = {}  #localization support to come
-
-#dialogue
-var _dialogue
-var _dialogueStarted: bool = false
+# show debug statements
+# export(bool) #TODO removed debug from export to declutter the inspector. Maybe add this somewhere else.
+var debug = false
 
 #dialogue flow control
 var next_line: String = ""  #extra line will be empty when there is no next line
 
 var waiting: bool = false
+
+var _stringTable: Dictionary = {}  #localization support to come
+
+#dialogue
+var _dialogue
+var _dialogueStarted: bool = false
 
 
 func _ready():
@@ -77,6 +77,19 @@ func _ready():
 				start(_startNode)
 
 
+func _process(delta):
+	if !Engine.editor_hint:
+		pass
+		# var state = _dialogue.get_exec_state()
+
+		# if (_dialogueStarted &&
+		# 	state!=YarnGlobals.ExecutionState.WaitingForOption &&
+		# 	state!=YarnGlobals.ExecutionState.Suspended):
+		# 	_dialogue.resume()
+		# else:
+		# 	print(state)
+
+
 # make an option selection and pass it to the dialogue
 # if it is waiting for an option
 func choose(optionIndex: int):
@@ -85,15 +98,6 @@ func choose(optionIndex: int):
 			_dialogue.set_selected_option(optionIndex)
 		_:
 			printerr("_dialogue was not currently waiting for option to be selected")
-
-
-func _compile_programs(showTokens: bool, printTree: bool):
-	if !_compiledYarnProgram:
-		printerr("Unable to compile programs. Missing CompiledYarnProgram resource in YarnRunner.")
-		return
-	var program = _compiledYarnProgram._compile_programs(showTokens, printTree)
-	_compiledYarnProgram._save_compiled_program(program)
-	pass
 
 
 func resume():
@@ -115,17 +119,28 @@ func set_program(program):
 		printerr("Program Resource must be of type CompiledYarnProgram!")
 
 
-func _process(delta):
-	if !Engine.editor_hint:
-		pass
-		# var state = _dialogue.get_exec_state()
+func start(node: String = _startNode):
+	if _dialogueStarted:
+		return
+	emit_signal("dialogue_started")
+	_dialogueStarted = true
+	_dialogue.set_node(node)
 
-		# if (_dialogueStarted &&
-		# 	state!=YarnGlobals.ExecutionState.WaitingForOption &&
-		# 	state!=YarnGlobals.ExecutionState.Suspended):
-		# 	_dialogue.resume()
-		# else:
-		# 	print(state)
+
+func stop():
+	if _dialogueStarted:
+		_dialogueStarted = false
+		_dialogue.stop()
+		emit_signal("dialogue_finished")
+
+
+func _compile_programs(showTokens: bool, printTree: bool):
+	if !_compiledYarnProgram:
+		printerr("Unable to compile programs. Missing CompiledYarnProgram resource in YarnRunner.")
+		return
+	var program = _compiledYarnProgram._compile_programs(showTokens, printTree)
+	_compiledYarnProgram._save_compiled_program(program)
+	pass
 
 
 func _handle_line(line):
@@ -214,18 +229,3 @@ func _handle_node_complete(node: String):
 	emit_signal("node_complete", node)
 
 	return YarnGlobals.HandlerState.ContinueExecution
-
-
-func start(node: String = _startNode):
-	if _dialogueStarted:
-		return
-	emit_signal("dialogue_started")
-	_dialogueStarted = true
-	_dialogue.set_node(node)
-
-
-func stop():
-	if _dialogueStarted:
-		_dialogueStarted = false
-		_dialogue.stop()
-		emit_signal("dialogue_finished")

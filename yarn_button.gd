@@ -13,6 +13,11 @@ func _ready():
 	pass
 
 
+func _process(delta):
+	rect_position.y = startingPosition.y + (amplitude * sin(elapsed * ((2 * PI) / period)))
+	elapsed += delta
+
+
 func show_button():
 	get_parent().update()
 	elapsed = 0
@@ -21,8 +26,3 @@ func show_button():
 
 func hide_button():
 	visible = false
-
-
-func _process(delta):
-	rect_position.y = startingPosition.y + (amplitude * sin(elapsed * ((2 * PI) / period)))
-	elapsed += delta
