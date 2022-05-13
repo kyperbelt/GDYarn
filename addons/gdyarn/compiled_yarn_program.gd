@@ -1,24 +1,19 @@
 tool
-extends Resource
-
 class_name CompiledYarnProgram
+extends Resource
 
 const ProgramUtils = preload("res://addons/gdyarn/core/program/program_utils.gd")
 const YarnProgram = ProgramUtils.YarnProgram
 const EXTENSION := "cyarn"
 
-
 export(String) var _programName = "compiled_yarn_program" setget set_program_name
 export(String, DIR) var _directory = "res://" setget set_dir
 export(Array, String, FILE, "*.yarn") var _yarnPrograms = []
 
+
 func _init():
 	pass
 
-
-func _load_program(p : YarnProgram,source:String,fileName:String,showTokens: bool , printSyntax : bool)->int:
-	var YarnCompiler = load("res://addons/gdyarn/core/compiler/compiler.gd")
-	return YarnCompiler.compile_string(source,fileName,p,showTokens,printSyntax)
 
 func set_dir(value):
 	if value.begins_with("res://"):
@@ -28,13 +23,20 @@ func set_dir(value):
 		else:
 			printerr("Directory does not exist : %s" % value)
 
-		
 
 func set_program_name(value):
 	_programName = value
 
+
+func _load_program(
+	p: YarnProgram, source: String, fileName: String, showTokens: bool, printSyntax: bool
+) -> int:
+	var YarnCompiler = load("res://addons/gdyarn/core/compiler/compiler.gd")
+	return YarnCompiler.compile_string(source, fileName, p, showTokens, printSyntax)
+
+
 # compile all the program files into a singular program
-func _compile_programs(showTokens : bool, printSyntax : bool):
+func _compile_programs(showTokens: bool, printSyntax: bool):
 	var GDYarnUtils = YarnGlobals.GDYarnUtils
 	var programs := []
 
@@ -47,15 +49,15 @@ func _compile_programs(showTokens : bool, printSyntax : bool):
 			continue
 
 		var f := File.new()
-		f.open(filepath,File.READ)
+		f.open(filepath, File.READ)
 		sources[filepath] = f.get_as_text()
 
 		f.close()
 
 	# gather all line tags currently in the files
-	var lineTags :Dictionary =  GDYarnUtils.get_tags_from_sources(sources)
+	var lineTags: Dictionary = GDYarnUtils.get_tags_from_sources(sources)
 
-	if "error" in lineTags: # conflict of line tags that needs to be resolved was found
+	if "error" in lineTags:  # conflict of line tags that needs to be resolved was found
 		printerr(lineTags["error"])
 		return
 
@@ -67,7 +69,7 @@ func _compile_programs(showTokens : bool, printSyntax : bool):
 	#                                reffering to a file.
 	for filepath in changedFiles:
 		var file := File.new()
-		file.open(filepath,File.WRITE)
+		file.open(filepath, File.WRITE)
 		file.store_string(changedFiles[filepath])
 		file.close()
 
@@ -78,33 +80,34 @@ func _compile_programs(showTokens : bool, printSyntax : bool):
 
 		var p = YarnProgram.new()
 
-		var _ok = _load_program(p,source,source_file,showTokens,printSyntax)
+		var _ok = _load_program(p, source, source_file, showTokens, printSyntax)
 		if _ok == OK:
 			programs.append(p)
 			print("compiled [%s] successfully!" % source_file)
 		else:
-			printerr("failed to compile [%s]."%source_file)
+			printerr("failed to compile [%s]." % source_file)
 			return
 
 	# combine all the programs into a single one
-	var yarnProgram = ProgramUtils.combine_programs([]+programs)
+	var yarnProgram = ProgramUtils.combine_programs([] + programs)
 
 	return yarnProgram
 
 
 func _load_compiled_program():
-	var filepath = "%s%s.%s" %[_directory,_programName,EXTENSION]
+	var filepath = "%s%s.%s" % [_directory, _programName, EXTENSION]
 	if File.new().file_exists(filepath):
 		var program = ProgramUtils._import_program(filepath)
 		program.programName = _programName
-		return  program
+		return program
 	else:
 		printerr("unable to load program : could not find File[%s] " % filepath)
 		return null
 
+
 func _save_compiled_program(program):
-	var filepath = "%s%s.%s" %[_directory,_programName,EXTENSION]
-	ProgramUtils.export_program(YarnProgram.new() if program==null else program,filepath)
+	var filepath = "%s%s.%s" % [_directory, _programName, EXTENSION]
+	ProgramUtils.export_program(YarnProgram.new() if program == null else program, filepath)
 
 # func set_files(arr):
 # 	if !Engine.editor_hint:
@@ -138,7 +141,6 @@ func _save_compiled_program(program):
 # 		if _yarnPrograms[i] != newOne[i]:
 # 			return i
 # 	return -1
-
 
 # func set_file(arr):
 # 	if arr.size() != _yarnPrograms.size():

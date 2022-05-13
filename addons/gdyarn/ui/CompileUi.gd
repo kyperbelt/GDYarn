@@ -15,14 +15,17 @@ export(NodePath) var Dialog
 func _ready():
 	get_node(CompileButton).connect("pressed", self, "_clicked")
 	get_node(OpenDialog).connect("pressed", self, "_open_dialog")
-	get_node(TestButton).connect("pressed",self,"_close_dialog")
-	pass # Replace with function body.
+	get_node(TestButton).connect("pressed", self, "_close_dialog")
+	pass  # Replace with function body.
+
 
 func _clicked():
-	emit_signal("compile_clicked",get_node(ShowTokens).pressed, get_node(PrintTree).pressed)
+	emit_signal("compile_clicked", get_node(ShowTokens).pressed, get_node(PrintTree).pressed)
+
 
 func _open_dialog():
 	get_node(Dialog).popup_centered()
+
 
 func _close_dialog():
 	(get_node(Dialog) as PopupDialog).hide()

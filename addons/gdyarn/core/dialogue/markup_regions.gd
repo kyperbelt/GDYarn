@@ -1,7 +1,3 @@
-
-
-
-
 class_name MarkupRegion
 
 
@@ -11,6 +7,5 @@ class_name MarkupRegion
 #                      "line": strippedLine,
 #                      "regions": [markupregion1, markupregion2, ...]
 #                   }
-static func generate_markup_regions(line : String)->Dictionary:
-
+static func generate_markup_regions(line: String) -> Dictionary:
 	return {}
