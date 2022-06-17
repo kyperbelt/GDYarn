@@ -27,8 +27,8 @@ const YarnNode = preload("res://addons/gdyarn/core/program/yarn_node.gd")
 const LineInfo = preload("res://addons/gdyarn/core/program/yarn_line.gd")
 
 const STRINGS_EXTENSION := "tsv"
-const DEFAULT_STRINGS_FORMAT = "%s%s-strings.%s"
-const LOCALISED_STRINGS_FORMAT = "%s%s-%s-strings.%s"
+const DEFAULT_STRINGS_FORMAT = "%s-strings.%s"
+const LOCALISED_STRINGS_FORMAT = "%s-%s-strings.%s"
 
 
 func _init():
@@ -40,14 +40,7 @@ func _init():
 static func export_program(program, filePath):
 	var file := File.new()
 
-	var stringsPath = (
-		DEFAULT_STRINGS_FORMAT
-		% [
-			filePath.get_base_dir().trim_prefix("res://"),
-			filePath.get_basename(),
-			STRINGS_EXTENSION
-		]
-	)
+	var stringsPath = DEFAULT_STRINGS_FORMAT % [filePath.get_basename(), STRINGS_EXTENSION]
 	var lineInfos = program.yarnStrings
 	var result: PoolStringArray = _serialize_lines(lineInfos)
 	var strings: String = result.join("\n")  #
@@ -194,21 +187,10 @@ static func _serialize_all_operands(operands) -> Array:
 static func _import_program(filePath) -> YarnProgram:
 	var file := File.new()
 
-	var stringsPath = (
-		DEFAULT_STRINGS_FORMAT
-		% [
-			filePath.get_base_dir().trim_prefix("res://"),
-			filePath.get_basename(),
-			STRINGS_EXTENSION
-		]
-	)
+	var stringsPath = DEFAULT_STRINGS_FORMAT % [filePath.get_basename(), STRINGS_EXTENSION]
 	var localizedStringsPath = (
-		"%s%s-strings-%s.ots"
-		% [
-			filePath.get_base_dir().trim_prefix("res://"),
-			filePath.get_basename(),
-			TranslationServer.get_locale()
-		]
+		"%s-strings-%s.ots"
+		% [filePath.get_basename(), TranslationServer.get_locale()]
 	)
 	var strings: PoolStringArray
 
