@@ -15,13 +15,12 @@ func _init():
 	pass
 
 
-func set_dir(value):
-	if value.begins_with("res://"):
-		var dirCheck = Directory.new()
-		if dirCheck.dir_exists(value):
-			_directory = value
-		else:
-			printerr("Directory does not exist : %s" % value)
+func set_dir(value: String):
+	var dirCheck = Directory.new()
+	if dirCheck.dir_exists(value):
+		_directory = value
+	else:
+		printerr("Directory does not exist : %s" % value)
 
 
 func set_program_name(value):
