@@ -218,15 +218,14 @@ func _handle_dialogue_complete():
 
 
 func _handle_node_start(node: String):
-	if !_dialogue._visitedNodeCount.has(node):
-		_dialogue._visitedNodeCount[node] = 1
-	else:
-		_dialogue._visitedNodeCount[node] += 1
-
 	emit_signal("node_started", node)
 
 
 func _handle_node_complete(node: String):
+	if !_dialogue._visitedNodeCount.has(node):
+		_dialogue._visitedNodeCount[node] = 1
+	else:
+		_dialogue._visitedNodeCount[node] += 1
 	emit_signal("node_complete", node)
 
 	return YarnGlobals.HandlerState.ContinueExecution
