@@ -104,7 +104,10 @@ func _ready():
 func _process(delta):
 	if shouldUpdateTotalLineTime:
 		shouldUpdateTotalLineTime = false
-		totalLineTime = float(text.get_total_character_count()) / float(_textSpeed)
+		if _textSpeed == 0:
+			totalLineTime = 0
+		else:
+			totalLineTime = float(text.get_total_character_count()) / float(_textSpeed)
 
 	if !lineFinished && !config.unknownOutput:
 		if _textSpeed <= 0 || elapsedTime >= totalLineTime:
