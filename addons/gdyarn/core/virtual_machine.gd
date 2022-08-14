@@ -58,7 +58,7 @@ func set_node(name: String) -> bool:
 		printerr("No node named %s has been loaded" % name)
 		return false
 
-	_dialogue.dlog("Running node %s" + name)
+	_dialogue.dlog("Running node %s" % name)
 
 	_currentNode = _program.yarnNodes[name]
 	reset()
