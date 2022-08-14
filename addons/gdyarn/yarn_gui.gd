@@ -156,7 +156,7 @@ func hide_gui():
 
 ## set the next line to be displayed
 ## if the current line is empty then immediately display the next line
-func set_line(line: String):
+func set_line(line: String, _meta:PoolStringArray):
 	if config.unknownOutput:
 		return
 

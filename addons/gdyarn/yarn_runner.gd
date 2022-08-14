@@ -7,7 +7,7 @@ extends Node
 signal dialogue_started
 
 # text lines
-signal line_emitted(line)
+signal line_emitted(line, meta)
 
 # commands that need to be processed
 signal command_emitted(command, arguments)
@@ -144,13 +144,16 @@ func _compile_programs(showTokens: bool, printTree: bool):
 
 
 func _handle_line(line):
-	var text: String = (_stringTable.get(line.id) as LineInfo).text
+	var lineInfo := _stringTable.get(line.id) as LineInfo
+	var text: String = lineInfo.text
 	text = text.format(line.substitutions)
 	if debug:
 		print("line: %s" % text)
 
 	emit_signal(
-		"line_emitted", YarnGlobals.expand_format_functions(text, TranslationServer.get_locale())
+		"line_emitted", 
+		YarnGlobals.expand_format_functions(text, TranslationServer.get_locale()),
+		lineInfo.meta
 	)
 
 	return YarnGlobals.HandlerState.PauseExecution
