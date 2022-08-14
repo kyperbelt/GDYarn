@@ -146,11 +146,17 @@ func get_vm() -> VirtualMachine:
 	return _vm
 
 
-func is_node_visited(node: String = _vm.current_node_name()) -> bool:
+func is_node_visited(node: String = "") -> bool:
 	return node_visit_count(node) > 0
 
 
-func node_visit_count(node: String = _vm.current_node_name()) -> int:
+func node_visit_count(node: String = "") -> int:
+	if node == "":
+		node = _vm.current_node_name()
+	elif _program.yarnStrings.has(node):
+		node = _program.yarnStrings[node].nodeName
+	else:
+		print("unexpected string %s for node name" % node)
 	var visitCount: int = 0
 	if _visitedNodeCount.has(node):
 		visitCount = _visitedNodeCount[node]
