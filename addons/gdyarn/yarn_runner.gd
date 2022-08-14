@@ -55,9 +55,7 @@ var _dialogueStarted: bool = false
 
 
 func _ready():
-	if Engine.editor_hint:
-		pass
-	else:
+	if !Engine.editor_hint:
 		var YarnDialogue = load("res://addons/gdyarn/core/dialogue.gd")
 		_dialogue = YarnDialogue.new(get_node(_variableStorage))
 		_dialogue.get_vm().lineHandler = funcref(self, "_handle_line")
