@@ -293,7 +293,7 @@ func run_instruction(instruction) -> bool:
 			else:
 				var params: Array = []  #value
 				for i in range(actualParamCount):
-					params.push_front(_state.pop_value())
+					params.push_front(_state.pop_value().value())
 
 				result = function.invoke(params)
 				# print("function[%s] result[%s]" %[functionName, result._to_string()])
