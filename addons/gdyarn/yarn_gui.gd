@@ -69,7 +69,7 @@ var lastVisibleChars: int = 0
 
 func _ready():
 	nameRegex = RegEx.new()
-	nameRegex.compile("^(?:.*(?=:))")
+	nameRegex.compile("^(?:[^:]*(?=:))")
 	if _namePlate:
 		namePlate = get_node(_namePlate)
 		if !namePlate.has_method("set_text"):
