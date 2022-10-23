@@ -58,7 +58,7 @@ func set_node(name: String) -> bool:
 		printerr("No node named %s has been loaded" % name)
 		return false
 
-	_dialogue.dlog("Running node %s" + name)
+	_dialogue.dlog("Running node %s" % name)
 
 	_currentNode = _program.yarnNodes[name]
 	reset()
@@ -293,7 +293,7 @@ func run_instruction(instruction) -> bool:
 			else:
 				var params: Array = []  #value
 				for i in range(actualParamCount):
-					params.push_front(_state.pop_value())
+					params.push_front(_state.pop_value().value())
 
 				result = function.invoke(params)
 				# print("function[%s] result[%s]" %[functionName, result._to_string()])

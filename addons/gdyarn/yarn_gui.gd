@@ -69,7 +69,7 @@ var lastVisibleChars: int = 0
 
 func _ready():
 	nameRegex = RegEx.new()
-	nameRegex.compile("^(?:.*(?=:))")
+	nameRegex.compile("^(?:[^:]*(?=:))")
 	if _namePlate:
 		namePlate = get_node(_namePlate)
 		if !namePlate.has_method("set_text"):
@@ -104,7 +104,10 @@ func _ready():
 func _process(delta):
 	if shouldUpdateTotalLineTime:
 		shouldUpdateTotalLineTime = false
-		totalLineTime = float(text.get_total_character_count()) / float(_textSpeed)
+		if _textSpeed == 0:
+			totalLineTime = 0
+		else:
+			totalLineTime = float(text.get_total_character_count()) / float(_textSpeed)
 
 	if !lineFinished && !config.unknownOutput:
 		if _textSpeed <= 0 || elapsedTime >= totalLineTime:
@@ -153,7 +156,7 @@ func hide_gui():
 
 ## set the next line to be displayed
 ## if the current line is empty then immediately display the next line
-func set_line(line: String):
+func set_line(line: String, _meta:PoolStringArray):
 	if config.unknownOutput:
 		return
 

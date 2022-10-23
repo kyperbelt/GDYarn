@@ -7,7 +7,7 @@ extends Node
 signal dialogue_started
 
 # text lines
-signal line_emitted(line)
+signal line_emitted(line, meta)
 
 # commands that need to be processed
 signal command_emitted(command, arguments)
@@ -55,9 +55,7 @@ var _dialogueStarted: bool = false
 
 
 func _ready():
-	if Engine.editor_hint:
-		pass
-	else:
+	if !Engine.editor_hint:
 		var YarnDialogue = load("res://addons/gdyarn/core/dialogue.gd")
 		_dialogue = YarnDialogue.new(get_node(_variableStorage))
 		_dialogue.get_vm().lineHandler = funcref(self, "_handle_line")
@@ -144,13 +142,16 @@ func _compile_programs(showTokens: bool, printTree: bool):
 
 
 func _handle_line(line):
-	var text: String = (_stringTable.get(line.id) as LineInfo).text
+	var lineInfo := _stringTable.get(line.id) as LineInfo
+	var text: String = lineInfo.text
 	text = text.format(line.substitutions)
 	if debug:
 		print("line: %s" % text)
 
 	emit_signal(
-		"line_emitted", YarnGlobals.expand_format_functions(text, TranslationServer.get_locale())
+		"line_emitted", 
+		YarnGlobals.expand_format_functions(text, TranslationServer.get_locale()),
+		lineInfo.meta
 	)
 
 	return YarnGlobals.HandlerState.PauseExecution
@@ -217,15 +218,14 @@ func _handle_dialogue_complete():
 
 
 func _handle_node_start(node: String):
-	if !_dialogue._visitedNodeCount.has(node):
-		_dialogue._visitedNodeCount[node] = 1
-	else:
-		_dialogue._visitedNodeCount[node] += 1
-
 	emit_signal("node_started", node)
 
 
 func _handle_node_complete(node: String):
+	if !_dialogue._visitedNodeCount.has(node):
+		_dialogue._visitedNodeCount[node] = 1
+	else:
+		_dialogue._visitedNodeCount[node] += 1
 	emit_signal("node_complete", node)
 
 	return YarnGlobals.HandlerState.ContinueExecution
