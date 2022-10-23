@@ -49,8 +49,9 @@ var text
 var namePlate
 var options: Array
 
-# the next line queued up to be displayed.
+# the next line and name queued up to be displayed.
 var nextLine: String = ""
+var nextName: String = ""
 
 # used to check if the current line is finished being displayed
 var lineFinished: bool = true
@@ -163,9 +164,9 @@ func set_line(line: String):
 		if result:
 			var name: String = result.get_string()
 			line = line.replace(name + ":", "")
-			set_name_plate(name)
-		else:
-			namePlate.visible = false
+			nextName = name
+		else :
+			nextName = ""
 
 	nextLine = line
 	if shouldContinue:
@@ -186,6 +187,12 @@ func display_next_line():
 	if !config.unknownOutput && !nextLine.empty():
 		# TODO add some preprocessing if we have a name plate available and the line contains
 		#      a string in the format "name: content"
+		if namePlate:
+			if nextName:
+				set_name_plate(nextName)
+			else:
+				namePlate.visible = false
+
 		if config.richTextLabel:
 			lastVisibleChars = 0
 			(text as RichTextLabel).percent_visible = 0
