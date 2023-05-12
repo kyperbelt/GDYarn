@@ -3,7 +3,7 @@ var nodeName: String
 var lineNumber: int
 var fileName: String
 var implicit: bool
-var meta: PoolStringArray = []
+var meta: PackedStringArray = []
 
 
 func _init(
@@ -12,7 +12,7 @@ func _init(
 	lineNumber: int,
 	fileName: String,
 	implicit: bool,
-	meta: PoolStringArray
+	meta: PackedStringArray
 ):
 	self.text = text
 	self.nodeName = nodeName

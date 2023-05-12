@@ -1,4 +1,4 @@
-extends Object
+class_name FunctionInfo
 
 # var Value : Script = load("res://addons/gdyarn/core/value.gd")
 
@@ -10,12 +10,12 @@ var name: String
 var paramCount: int = 0
 
 #function implementation
-var function: FuncRef
+var function: Callable
 
 var returnsValue: bool = false
 
 
-func _init(name: String, paramCount: int, function: FuncRef = null, returnsValue: bool = false):
+func _init(name: String, paramCount: int, function: Callable, returnsValue: bool = false):
 	self.name = name
 	self.paramCount = paramCount
 	self.function = function
@@ -29,16 +29,16 @@ func invoke(params: Array = []):
 	if check_param_count(length):
 		if returnsValue:
 			if length > 0:
-				var result = function.call_funcv(params)
+				var result = function.callv(params)
 				# printerr("function is returning null when it shouldnt, ", result," type of ", typeof(result))
 				return Value.new(result)
 			else:
-				return Value.new(function.call_func())
+				return Value.new(function.call())
 		else:
 			if length > 0:
-				function.call_funcv(params)
+				function.callv(params)
 			else:
-				function.call_func()
+				function.call()
 	return null
 
 

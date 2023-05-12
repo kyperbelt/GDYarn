@@ -10,8 +10,8 @@ func can_handle(object):
 
 
 func parse_begin(object):
-	var instance = compilerUi.instance()
-	if !instance.is_connected("compile_clicked", object, "_compile_programs"):
-		instance.connect("compile_clicked", object, "_compile_programs")
+	var instance = compilerUi.instantiate()
+	if !instance.is_connected("compile_clicked", Callable(object, "_compile_programs")):
+		instance.connect("compile_clicked", Callable(object, "_compile_programs"))
 
 	add_custom_control(instance)

@@ -1,21 +1,21 @@
-tool
+@tool
 extends VBoxContainer
 
 signal compile_clicked(showTokens, printSyntax)
 
-export(NodePath) var CompileButton
-export(NodePath) var ShowTokens
-export(NodePath) var PrintTree
-export(NodePath) var TestButton
-export(NodePath) var OpenDialog
-export(NodePath) var Dialog
+@export var CompileButton: NodePath
+@export var ShowTokens: NodePath
+@export var PrintTree: NodePath
+@export var TestButton: NodePath
+@export var OpenDialog: NodePath
+@export var Dialog: NodePath
 
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	get_node(CompileButton).connect("pressed", self, "_clicked")
-	get_node(OpenDialog).connect("pressed", self, "_open_dialog")
-	get_node(TestButton).connect("pressed", self, "_close_dialog")
+	get_node(CompileButton).connect("pressed", Callable(self, "_clicked"))
+	get_node(OpenDialog).connect("pressed", Callable(self, "_open_dialog"))
+	get_node(TestButton).connect("pressed", Callable(self, "_close_dialog"))
 	pass  # Replace with function body.
 
 
@@ -28,4 +28,4 @@ func _open_dialog():
 
 
 func _close_dialog():
-	(get_node(Dialog) as PopupDialog).hide()
+	(get_node(Dialog) as Popup).hide()

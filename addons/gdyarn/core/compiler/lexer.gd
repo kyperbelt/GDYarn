@@ -1,37 +1,60 @@
+class_name YarnLexer
+
+enum Mode{
+	Header,
+	Body,
+}
 const LINE_COMENT: String = "//"
 const FORWARD_SLASH: String = "/"
 
 const LINE_SEPARATOR: String = "\n"
 
+
+# STATE NAMES
 const BASE: String = "base"
+const HEADER_TAG: String = "header_tag"
+const HEADER_TAG_VALUE :String= "header_tag_value"
 const COMMAND: String = "command"
 const LINK: String = "link"
 const SHORTCUT: String = "shortcut"
 const TAG: String = "tag"
 const EXPRESSION: String = "expression"
+const INLINE_EXPRESSION: String = "inline-expression"
 const ASSIGNMENT: String = "assignment"
 const OPTION: String = "option"
 const DESTINATION: String = "destination"
 const FORMAT_FUNCTION: String = "format"
+const FORMAT_FUNCTION_EXPRESSION: String = "format-expression"
+
 const WHITESPACE: String = "\\s*"
+
 
 var error = OK
 
-var _states: Dictionary = {}
-var _defaultState: LexerState
+var patterns: Dictionary = {}
+
+# mode states 
+var _current_mode_states : Dictionary = {}
+var _body_mode_states: Dictionary = {}
+var _header_mode_states : Dictionary = {}
+
+var _defaultState: String
 
 var _currentState: LexerState
 
 var _indentStack: Array = []
 var _shouldTrackIndent: bool = false
 
+var _mode: Mode = Mode.Header
+
 
 func _init():
-	create_states()
+	__create_patterns()
+	__create_body_mode_states()
+	__create_header_mode_states()
 
-
-func create_states():
-	var patterns: Dictionary = {}
+func __create_patterns():
+	patterns= {}
 	patterns[YarnGlobals.TokenType.Text] = ".*"
 
 	patterns[YarnGlobals.TokenType.Number] = "\\-?[0-9]+(\\.[0-9]+)?"
@@ -64,11 +87,16 @@ func create_states():
 	patterns[YarnGlobals.TokenType.TrueToken] = "true(?!\\w)"
 	patterns[YarnGlobals.TokenType.FalseToken] = "false(?!\\w)"
 	patterns[YarnGlobals.TokenType.NullToken] = "null(?!\\w)"
+	patterns[YarnGlobals.TokenType.ValueType] = "((String|Number|Bool)(?!\\w))"
 	patterns[YarnGlobals.TokenType.BeginCommand] = "\\<\\<"
 	patterns[YarnGlobals.TokenType.EndCommand] = "\\>\\>"
-	patterns[YarnGlobals.TokenType.OptionStart] = "\\[\\["
-	patterns[YarnGlobals.TokenType.OptionEnd] = "\\]\\]"
-	patterns[YarnGlobals.TokenType.OptionDelimit] = "\\|"
+	patterns[YarnGlobals.TokenType.Colon] = "\\:"
+	patterns[YarnGlobals.TokenType.Jump] = "jump(?!\\w)"
+	patterns[YarnGlobals.TokenType.Declare] = "declare(?!\\w)"
+	patterns[YarnGlobals.TokenType.ExplicitTypeAssignment] = "(\\:\\:|as(?!\\w))"
+	# patterns[YarnGlobals.TokenType.OptionStart] = "\\[\\["
+	# patterns[YarnGlobals.TokenType.OptionEnd] = "\\]\\]"
+	# patterns[YarnGlobals.TokenType.OptionDelimit] = "\\|"
 	patterns[YarnGlobals.TokenType.ExpressionFunctionStart] = "\\{"
 	patterns[YarnGlobals.TokenType.ExpressionFunctionEnd] = "\\}"
 	patterns[YarnGlobals.TokenType.FormatFunctionStart] = "(?<!\\[)\\[(?!\\[)"
@@ -80,6 +108,21 @@ func create_states():
 	patterns[YarnGlobals.TokenType.EndIf] = "endif(?!\\w)"
 	patterns[YarnGlobals.TokenType.Set] = "set(?!\\w)"
 	patterns[YarnGlobals.TokenType.ShortcutOption] = "\\-\\>\\s*"
+	pass
+
+func __create_header_mode_states():
+	_header_mode_states = {}	
+	_header_mode_states[BASE] = LexerState.new(patterns)
+	_header_mode_states[BASE].add_transition(YarnGlobals.TokenType.Identifier, HEADER_TAG);
+
+	_header_mode_states[HEADER_TAG] = LexerState.new(patterns)
+	_header_mode_states[HEADER_TAG].add_transition(YarnGlobals.TokenType.Colon, HEADER_TAG_VALUE)
+
+	_header_mode_states[HEADER_TAG_VALUE] = LexerState.new(patterns)
+	_header_mode_states[HEADER_TAG_VALUE].add_transition(YarnGlobals.TokenType.Text, BASE)
+
+
+func __create_body_mode_states():
 
 	#compound states
 	var shortcut_option: String = SHORTCUT + "-" + OPTION
@@ -87,114 +130,113 @@ func create_states():
 	var command_or_expression: String = COMMAND + "-" + "or" + "-" + EXPRESSION
 	var link_destination: String = LINK + "-" + DESTINATION
 	var format_expression: String = FORMAT_FUNCTION + "-" + EXPRESSION
-	var inline_expression: String = "inline" + "-" + EXPRESSION
 
 	#TODO: FIXME: Add transition from shortcut options and option links into inline expressions and format functions
 
-	_states = {}
+	_body_mode_states = {}
 
-	_states[BASE] = LexerState.new(patterns)
-	_states[BASE].add_transition(YarnGlobals.TokenType.BeginCommand, COMMAND, true)
-	_states[BASE].add_transition(
-		YarnGlobals.TokenType.ExpressionFunctionStart, inline_expression, true
+	_body_mode_states[BASE] = LexerState.new(patterns)
+	_body_mode_states[BASE].add_transition(YarnGlobals.TokenType.BeginCommand, COMMAND, true)
+	_body_mode_states[BASE].add_transition(
+		YarnGlobals.TokenType.ExpressionFunctionStart, INLINE_EXPRESSION, true
 	)
-	_states[BASE].add_transition(YarnGlobals.TokenType.FormatFunctionStart, FORMAT_FUNCTION, true)
-	_states[BASE].add_transition(YarnGlobals.TokenType.OptionStart, LINK, true)
-	_states[BASE].add_transition(YarnGlobals.TokenType.ShortcutOption, shortcut_option)
-	_states[BASE].add_transition(YarnGlobals.TokenType.TagMarker, TAG, true)
-	_states[BASE].add_text_rule(YarnGlobals.TokenType.Text)
+	_body_mode_states[BASE].add_transition(YarnGlobals.TokenType.FormatFunctionStart, FORMAT_FUNCTION, true)
+	# _body_mode_states[BASE].add_transition(YarnGlobals.TokenType.OptionStart, LINK, true)
+	_body_mode_states[BASE].add_transition(YarnGlobals.TokenType.ShortcutOption, shortcut_option)
+	_body_mode_states[BASE].add_transition(YarnGlobals.TokenType.TagMarker, TAG, true)
+	_body_mode_states[BASE].add_text_rule(YarnGlobals.TokenType.Text)
 
 	#TODO: FIXME - Tags are not being proccessed properly this way. We must look for the format #{identifier}:{value}
 	#              Possible solution is to add more transitions
-	_states[TAG] = LexerState.new(patterns)
-	_states[TAG].add_transition(YarnGlobals.TokenType.Identifier, BASE)
+	_body_mode_states[TAG] = LexerState.new(patterns)
+	_body_mode_states[TAG].add_transition(YarnGlobals.TokenType.Identifier, BASE)
 
-	_states[shortcut_option] = LexerState.new(patterns)
-	_states[shortcut_option].track_indent = true
-	_states[shortcut_option].add_transition(YarnGlobals.TokenType.BeginCommand, EXPRESSION, true)
-	_states[shortcut_option].add_transition(
-		YarnGlobals.TokenType.ExpressionFunctionStart, inline_expression, true
+	_body_mode_states[shortcut_option] = LexerState.new(patterns)
+	_body_mode_states[shortcut_option].track_indent = true
+	_body_mode_states[shortcut_option].add_transition(YarnGlobals.TokenType.BeginCommand, EXPRESSION, true)
+	_body_mode_states[shortcut_option].add_transition(
+		YarnGlobals.TokenType.ExpressionFunctionStart, INLINE_EXPRESSION, true
 	)
-	_states[shortcut_option].add_transition(
+	_body_mode_states[shortcut_option].add_transition(
 		YarnGlobals.TokenType.TagMarker, shortcut_option_tag, true
 	)
-	_states[shortcut_option].add_text_rule(YarnGlobals.TokenType.Text, BASE)
+	_body_mode_states[shortcut_option].add_text_rule(YarnGlobals.TokenType.Text, BASE)
 
-	_states[shortcut_option_tag] = LexerState.new(patterns)
-	_states[shortcut_option_tag].add_transition(YarnGlobals.TokenType.Identifier, shortcut_option)
+	_body_mode_states[shortcut_option_tag] = LexerState.new(patterns)
+	_body_mode_states[shortcut_option_tag].add_transition(YarnGlobals.TokenType.Identifier, shortcut_option)
 
-	_states[COMMAND] = LexerState.new(patterns)
-	_states[COMMAND].add_transition(YarnGlobals.TokenType.IfToken, EXPRESSION)
-	_states[COMMAND].add_transition(YarnGlobals.TokenType.ElseToken)
-	_states[COMMAND].add_transition(YarnGlobals.TokenType.ElseIf, EXPRESSION)
-	_states[COMMAND].add_transition(YarnGlobals.TokenType.EndIf)
-	_states[COMMAND].add_transition(YarnGlobals.TokenType.Set, ASSIGNMENT)
-	_states[COMMAND].add_transition(YarnGlobals.TokenType.EndCommand, BASE, true)
-	_states[COMMAND].add_transition(YarnGlobals.TokenType.Identifier, command_or_expression)
-	_states[COMMAND].add_text_rule(YarnGlobals.TokenType.Text)
+	_body_mode_states[COMMAND] = LexerState.new(patterns)
+	_body_mode_states[COMMAND].add_transition(YarnGlobals.TokenType.IfToken, EXPRESSION)
+	_body_mode_states[COMMAND].add_transition(YarnGlobals.TokenType.ElseToken)
+	_body_mode_states[COMMAND].add_transition(YarnGlobals.TokenType.ElseIf, EXPRESSION)
+	_body_mode_states[COMMAND].add_transition(YarnGlobals.TokenType.EndIf)
+	_body_mode_states[COMMAND].add_transition(YarnGlobals.TokenType.Set, ASSIGNMENT)
+	_body_mode_states[COMMAND].add_transition(YarnGlobals.TokenType.EndCommand, BASE, true)
+	_body_mode_states[COMMAND].add_transition(YarnGlobals.TokenType.Identifier, command_or_expression)
+	_body_mode_states[COMMAND].add_text_rule(YarnGlobals.TokenType.Text)
 
-	_states[command_or_expression] = LexerState.new(patterns)
-	_states[command_or_expression].add_transition(YarnGlobals.TokenType.LeftParen, EXPRESSION)
-	_states[command_or_expression].add_transition(YarnGlobals.TokenType.EndCommand, BASE, true)
-	_states[command_or_expression].add_text_rule(YarnGlobals.TokenType.Text)
+	_body_mode_states[command_or_expression] = LexerState.new(patterns)
+	_body_mode_states[command_or_expression].add_transition(YarnGlobals.TokenType.LeftParen, EXPRESSION)
+	_body_mode_states[command_or_expression].add_transition(YarnGlobals.TokenType.EndCommand, BASE, true)
+	_body_mode_states[command_or_expression].add_text_rule(YarnGlobals.TokenType.Text)
 
-	_states[ASSIGNMENT] = LexerState.new(patterns)
-	_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.Variable)
-	_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.EqualToOrAssign, EXPRESSION)
-	_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.AddAssign, EXPRESSION)
-	_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.MinusAssign, EXPRESSION)
-	_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.MultiplyAssign, EXPRESSION)
-	_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.DivideAssign, EXPRESSION)
+	_body_mode_states[ASSIGNMENT] = LexerState.new(patterns)
+	_body_mode_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.Variable)
+	_body_mode_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.EqualToOrAssign, EXPRESSION)
+	_body_mode_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.AddAssign, EXPRESSION)
+	_body_mode_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.MinusAssign, EXPRESSION)
+	_body_mode_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.MultiplyAssign, EXPRESSION)
+	_body_mode_states[ASSIGNMENT].add_transition(YarnGlobals.TokenType.DivideAssign, EXPRESSION)
 
-	_states[FORMAT_FUNCTION] = LexerState.new(patterns)
-	_states[FORMAT_FUNCTION].add_transition(YarnGlobals.TokenType.FormatFunctionEnd, BASE, true)
-	_states[FORMAT_FUNCTION].add_transition(
+	_body_mode_states[FORMAT_FUNCTION] = LexerState.new(patterns)
+	_body_mode_states[FORMAT_FUNCTION].add_transition(YarnGlobals.TokenType.FormatFunctionEnd, BASE, true)
+	_body_mode_states[FORMAT_FUNCTION].add_transition(
 		YarnGlobals.TokenType.ExpressionFunctionStart, format_expression, true
 	)
-	_states[FORMAT_FUNCTION].add_text_rule(YarnGlobals.TokenType.Text)
+	_body_mode_states[FORMAT_FUNCTION].add_text_rule(YarnGlobals.TokenType.Text)
 
-	_states[format_expression] = LexerState.new(patterns)
-	_states[format_expression].add_transition(
+	_body_mode_states[format_expression] = LexerState.new(patterns)
+	_body_mode_states[format_expression].add_transition(
 		YarnGlobals.TokenType.ExpressionFunctionEnd, FORMAT_FUNCTION
 	)
-	form_expression_state(_states[format_expression])
+	form_expression_state(_body_mode_states[format_expression])
 
-	_states[inline_expression] = LexerState.new(patterns)
-	_states[inline_expression].add_transition(YarnGlobals.TokenType.ExpressionFunctionEnd, BASE)
-	form_expression_state(_states[inline_expression])
+	_body_mode_states[INLINE_EXPRESSION] = LexerState.new(patterns)
+	_body_mode_states[INLINE_EXPRESSION].add_transition(YarnGlobals.TokenType.ExpressionFunctionEnd, BASE)
+	form_expression_state(_body_mode_states[INLINE_EXPRESSION])
 
-	_states[EXPRESSION] = LexerState.new(patterns)
-	_states[EXPRESSION].add_transition(YarnGlobals.TokenType.EndCommand, BASE)
-	# _states[EXPRESSION].add_transition(YarnGlobals.TokenType.FormatFunctionEnd,BASE)
-	form_expression_state(_states[EXPRESSION])
+	_body_mode_states[EXPRESSION] = LexerState.new(patterns)
+	_body_mode_states[EXPRESSION].add_transition(YarnGlobals.TokenType.EndCommand, BASE)
+	# _body_mode_states[EXPRESSION].add_transition(YarnGlobals.TokenType.FormatFunctionEnd,BASE)
+	form_expression_state(_body_mode_states[EXPRESSION])
 
-	_states[LINK] = LexerState.new(patterns)
-	_states[LINK].add_transition(YarnGlobals.TokenType.OptionEnd, BASE, true)
-	_states[LINK].add_transition(YarnGlobals.TokenType.ExpressionFunctionStart, "link-ee", true)
-	_states[LINK].add_transition(YarnGlobals.TokenType.FormatFunctionStart, "link-ff", true)
-	_states[LINK].add_transition(YarnGlobals.TokenType.FormatFunctionEnd, LINK, true)
-	_states[LINK].add_transition(YarnGlobals.TokenType.OptionDelimit, link_destination, true)
-	_states[LINK].add_text_rule(YarnGlobals.TokenType.Text)
+	# _body_mode_states[LINK] = LexerState.new(patterns)
+	# _body_mode_states[LINK].add_transition(YarnGlobals.TokenType.OptionEnd, BASE, true)
+	# _body_mode_states[LINK].add_transition(YarnGlobals.TokenType.ExpressionFunctionStart, "link-ee", true)
+	# _body_mode_states[LINK].add_transition(YarnGlobals.TokenType.FormatFunctionStart, "link-ff", true)
+	# _body_mode_states[LINK].add_transition(YarnGlobals.TokenType.FormatFunctionEnd, LINK, true)
+	# _body_mode_states[LINK].add_transition(YarnGlobals.TokenType.OptionDelimit, link_destination, true)
+	# _body_mode_states[LINK].add_text_rule(YarnGlobals.TokenType.Text)
 
-	_states["link-ff"] = LexerState.new(patterns)
-	_states["link-ff"].add_transition(YarnGlobals.TokenType.FormatFunctionEnd, LINK, true)
-	_states["link-ff"].add_transition(
+	_body_mode_states["link-ff"] = LexerState.new(patterns)
+	_body_mode_states["link-ff"].add_transition(YarnGlobals.TokenType.FormatFunctionEnd, LINK, true)
+	_body_mode_states["link-ff"].add_transition(
 		YarnGlobals.TokenType.ExpressionFunctionStart, "link-ee", true
 	)
-	_states["link-ff"].add_text_rule(YarnGlobals.TokenType.Text)
+	_body_mode_states["link-ff"].add_text_rule(YarnGlobals.TokenType.Text)
 
-	_states["link-ee"] = LexerState.new(patterns)
-	_states["link-ee"].add_transition(YarnGlobals.TokenType.ExpressionFunctionEnd, LINK)
-	form_expression_state(_states["link-ee"])
+	_body_mode_states["link-ee"] = LexerState.new(patterns)
+	_body_mode_states["link-ee"].add_transition(YarnGlobals.TokenType.ExpressionFunctionEnd, LINK)
+	form_expression_state(_body_mode_states["link-ee"])
 
-	_states[link_destination] = LexerState.new(patterns)
-	_states[link_destination].add_transition(YarnGlobals.TokenType.Identifier)
-	_states[link_destination].add_transition(YarnGlobals.TokenType.OptionEnd, BASE)
+	# _body_mode_states[link_destination] = LexerState.new(patterns)
+	# _body_mode_states[link_destination].add_transition(YarnGlobals.TokenType.Identifier)
+	# _body_mode_states[link_destination].add_transition(YarnGlobals.TokenType.OptionEnd, BASE)
 
-	_defaultState = _states[BASE]
+	_defaultState = BASE	
 
-	for stateKey in _states.keys():
-		_states[stateKey].stateName = stateKey
+	for stateKey in _body_mode_states.keys():
+		_body_mode_states[stateKey].stateName = stateKey
 
 	pass
 
@@ -227,17 +269,33 @@ func form_expression_state(expressionState):
 	expressionState.add_transition(YarnGlobals.TokenType.NullToken)
 	expressionState.add_transition(YarnGlobals.TokenType.Identifier)
 
-
-func tokenize(text: String, lineNumber) -> Array:
+func __initialize():
 	_indentStack.clear()
 	_indentStack.push_front(IntBoolPair.new(0, false))
+	error = OK
 	_shouldTrackIndent = false
+	set_mode(Mode.Header)
+	# _currentState = _current_mode_states[_defaultState]
+
+
+func set_mode(mode: Mode):
+	self._mode = mode
+	if (mode == Mode.Header):
+		_current_mode_states = _header_mode_states
+		_defaultState = BASE
+	else:
+		_current_mode_states = _body_mode_states
+		_defaultState = BASE
+
+	_currentState = _current_mode_states[_defaultState]
+
+
+func tokenize(text: String, lineNumber) -> Array[Token]:
+	__initialize()
 
 	var tokens: Array = []
 
-	_currentState = _defaultState
-
-	var lines: PoolStringArray = text.split(LINE_SEPARATOR)
+	var lines: PackedStringArray = text.split(LINE_SEPARATOR)
 	lines.append("")
 
 	# var lineNumber : int = 1
@@ -256,8 +314,9 @@ func tokenize(text: String, lineNumber) -> Array:
 	return tokens
 
 
-func tokenize_line(line: String, lineNumber: int) -> Array:
-	var tokenStack: Array = []
+func tokenize_line(line: String, lineNumber: int) -> Array[Token]:
+	# enter_state(_current_mode_states[_defaultState])
+	var tokenStack: Array[Token] = []
 
 	var freshLine = line.replace("\t", "    ").replace("\r", "")
 
@@ -298,11 +357,13 @@ func tokenize_line(line: String, lineNumber: int) -> Array:
 		error = ERR_COMPILATION_FAILED
 		return []
 
+
 	while column < freshLine.length():
 		if freshLine.substr(column).begins_with(LINE_COMENT):
 			break
 
 		var matched: bool = false
+
 
 		for rule in _currentState.rules:
 			var found: RegExMatch = rule.regex.search(freshLine, column)
@@ -357,7 +418,7 @@ func tokenize_line(line: String, lineNumber: int) -> Array:
 			tokenStack.push_front(token)
 
 			if rule.enterState != null && rule.enterState.length() > 0:
-				if !_states.has(rule.enterState):
+				if !_current_mode_states.has(rule.enterState):
 					printerr(
 						(
 							"Tried to enter unknown State[%s] - line(%s) col(%s)"
@@ -367,7 +428,7 @@ func tokenize_line(line: String, lineNumber: int) -> Array:
 					error = ERR_DOES_NOT_EXIST
 					return []
 
-				enter_state(_states[rule.enterState])
+				enter_state(_current_mode_states[rule.enterState])
 
 				if _shouldTrackIndent:
 					if _indentStack.front().key < indentation:
@@ -392,7 +453,7 @@ func tokenize_line(line: String, lineNumber: int) -> Array:
 
 	# if tokenStack.size() >= 1 && (tokenStack.front().type == YarnGlobals.TokenType.Text || tokenStack.front().type == YarnGlobals.TokenType.Identifier):
 	# 	tokenStack.push_front(Token.new(YarnGlobals.TokenType.EndOfLine,_currentState,lineNumber,column,"break"))
-	tokenStack.invert()
+	tokenStack.reverse()
 
 	return tokenStack
 
@@ -468,14 +529,14 @@ class LexerState:
 			if rule.delimitsText:
 				delimiters.append("%s" % rule.regex.get_pattern().substr(2))
 
-		var pattern = "\\G((?!%s).)*" % [PoolStringArray(delimiters).join("|")]
+		var pattern = "\\G((?!%s).)*" % ["|".join(PackedStringArray(delimiters))]
 		var rule: Rule = add_transition(type, state)
 		rule.regex = RegEx.new()
 		rule.regex.compile(pattern)
 		rule.isTextRule = true
 		return rule
 
-	func expexted_tokens_string() -> String:
+	func expected_tokens_string() -> String:
 		var result = ""
 		for rule in rules:
 			result += "" + YarnGlobals.token_name(rule.tokenType)

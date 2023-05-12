@@ -1,5 +1,4 @@
-extends Node
-
+class_name YarnDIalogue
 #consts
 const DEFAULT_START: String = "Start"
 
@@ -15,8 +14,8 @@ var executionComplete: bool
 
 var _variableStorage
 
-var _debugLog: FuncRef
-var _errLog: FuncRef
+var _debugLog: Callable
+var _errLog: Callable
 
 var _program: YarnProgram
 
@@ -31,8 +30,8 @@ func _init(variableStorage):
 	var YarnLibrary = load("res://addons/gdyarn/core/library.gd")
 	var _variableStorage
 	library = YarnLibrary.new()
-	_debugLog = funcref(self, "dlog")
-	_errLog = funcref(self, "elog")
+	_debugLog = dlog 
+	_errLog = elog
 	executionComplete = false
 
 	# import the standard library
@@ -41,10 +40,10 @@ func _init(variableStorage):
 	library.import_library(StandardLibrary.new())  #FIX
 
 	#add a function to lib that checks if node is visited
-	library.register_function("visited", -1, funcref(self, "is_node_visited"), true)
+	library.register_function("visited", -1, is_node_visited, true)
 
 	#add function to lib that gets the node visit count
-	library.register_function("visit_count", -1, funcref(self, "node_visit_count"), true)
+	library.register_function("visit_count", -1, node_visit_count, true)
 
 
 func dlog(message: String):
@@ -93,12 +92,12 @@ func current_node() -> String:
 
 func get_node_id(name: String) -> String:
 	if _program.nodes.size() == 0:
-		_errLog.call_func("No nodes loaded")
+		_errLog.call("No nodes loaded")
 		return ""
 	if _program.nodes.has(name):
 		return "id:" + name
 	else:
-		_errLog.call_func("No node named [%s] exists" % name)
+		_errLog.call("No node named [%s] exists" % name)
 		return ""
 
 

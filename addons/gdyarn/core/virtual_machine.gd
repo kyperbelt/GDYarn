@@ -17,12 +17,12 @@ var OptionSet = load("res://addons/gdyarn/core/dialogue/option_set.gd")
 
 var NULL_VALUE = Value.new(null)
 
-var lineHandler: FuncRef
-var optionsHandler: FuncRef
-var commandHandler: FuncRef
-var nodeStartHandler: FuncRef
-var nodeCompleteHandler: FuncRef
-var dialogueCompleteHandler: FuncRef
+var lineHandler: Callable 
+var optionsHandler: Callable
+var commandHandler: Callable
+var nodeStartHandler: Callable
+var nodeCompleteHandler: Callable
+var dialogueCompleteHandler: Callable
 
 var waiting: bool = false
 
@@ -63,7 +63,7 @@ func set_node(name: String) -> bool:
 	_currentNode = _program.yarnNodes[name]
 	reset()
 	_state.currentNodeName = name
-	nodeStartHandler.call_func(name)
+	nodeStartHandler.call(name)
 	return true
 
 
@@ -155,10 +155,10 @@ func resume() -> bool:
 		_state.programCounter += 1
 
 		if _state.programCounter >= _currentNode.instructions.size():
-			nodeCompleteHandler.call_func(_currentNode.nodeName)
+			nodeCompleteHandler.call(_currentNode.nodeName)
 			executionState = YarnGlobals.ExecutionState.Stopped
 			reset()
-			dialogueCompleteHandler.call_func()
+			dialogueCompleteHandler.call()
 			_dialogue.dlog("Run Complete")
 
 	return true
@@ -197,7 +197,7 @@ func run_instruction(instruction) -> bool:
 
 				pass  #add format function support
 
-			var pause: int = lineHandler.call_func(line)
+			var pause: int = lineHandler.call(line)
 
 			if pause == YarnGlobals.HandlerState.PauseExecution:
 				executionState = YarnGlobals.ExecutionState.Suspended
@@ -218,20 +218,14 @@ func run_instruction(instruction) -> bool:
 					var time: float = float(command.args[0])
 					if time > 0:
 						waiting = true
-						var pause = commandHandler.call_func(command)
-						if (
-							pause is GDScriptFunctionState
-							|| pause == YarnGlobals.HandlerState.PauseExecution
-						):
+						var pause = commandHandler.call(command)
+						if (pause == YarnGlobals.HandlerState.PauseExecution):
 							executionState = YarnGlobals.ExecutionState.Suspended
-						yield(self, "resumed")
+						await self.resumed
 						waiting = false
 			else:
-				var pause = commandHandler.call_func(command)
-				if (
-					pause is GDScriptFunctionState
-					|| pause == YarnGlobals.HandlerState.PauseExecution
-				):
+				var pause = commandHandler.call(command)
+				if (pause == YarnGlobals.HandlerState.PauseExecution):
 					executionState = YarnGlobals.ExecutionState.Suspended
 
 		YarnGlobals.ByteCode.PushString:
@@ -315,8 +309,8 @@ func run_instruction(instruction) -> bool:
 
 		YarnGlobals.ByteCode.Stop:
 			#stop execution and repost it
-			nodeCompleteHandler.call_func(_currentNode.nodeName)
-			dialogueCompleteHandler.call_func()
+			nodeCompleteHandler.call(_currentNode.nodeName)
+			dialogueCompleteHandler.call()
 			executionState = YarnGlobals.ExecutionState.Stopped
 			reset()
 
@@ -324,13 +318,13 @@ func run_instruction(instruction) -> bool:
 			#run a node
 			var name: String
 
-			if instruction.operands.size() == 0 || instruction.operands[0].value.empty():
+			if instruction.operands.size() == 0 || instruction.operands[0].value.is_empty():
 				#get string from stack and jump to node with that name
 				name = _state.peek_value().value()
 			else:
 				name = instruction.operands[0].value
 
-			var pause = nodeCompleteHandler.call_func(_currentNode.nodeName)
+			var pause = nodeCompleteHandler.call(_currentNode.nodeName)
 			set_node(name)
 			_state.programCounter -= 1
 			if pause == YarnGlobals.HandlerState.PauseExecution:
@@ -354,7 +348,7 @@ func run_instruction(instruction) -> bool:
 			if _state.currentOptions.size() == 0:
 				executionState = YarnGlobals.ExecutionState.Stopped
 				reset()
-				dialogueCompleteHandler.call_func()
+				dialogueCompleteHandler.call()
 				return false
 
 			#present list of options
@@ -370,7 +364,7 @@ func run_instruction(instruction) -> bool:
 			#delegate for them to call
 			#when user makes selection
 
-			optionsHandler.call_func(OptionSet.new(choices))
+			optionsHandler.call(OptionSet.new(choices))
 			pass
 		_:
 			#bytecode messed up woopsise

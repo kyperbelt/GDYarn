@@ -86,7 +86,7 @@ static func compile_string(
 			# print(sourceLines[lineNumber])
 			lineNumber += 1
 
-			if !line.empty():
+			if !line.is_empty():
 				var result = headerProperty.search(line)
 				if result != null:
 					var field: String = result.get_string("field")
@@ -100,7 +100,7 @@ static func compile_string(
 
 		lineNumber += 1
 		#past header
-		var bodyLines: PoolStringArray = []
+		var bodyLines: PackedStringArray = []
 
 		while lineNumber < sourceLines.size() && sourceLines[lineNumber] != "===":
 			bodyLines.append(sourceLines[lineNumber])
@@ -108,7 +108,7 @@ static func compile_string(
 
 		lineNumber += 1
 
-		body = bodyLines.join("\n")
+		body = "\n".join(bodyLines)
 		var lexer = Lexer.new()
 
 		var tokens: Array = lexer.tokenize(body, 0)
@@ -129,7 +129,7 @@ static func compile_string(
 			print(parserNode.tree_string(0))
 
 		parsedNodes.append(parserNode)
-		while lineNumber < sourceLines.size() && sourceLines[lineNumber].empty():
+		while lineNumber < sourceLines.size() && sourceLines[lineNumber].is_empty():
 			lineNumber += 1
 
 	#--- End parsing nodes---
@@ -163,7 +163,7 @@ func compile_node(program: YarnProgram, parsedNode) -> void:
 		nodeCompiled.tags = parsedNode.tags
 
 		#raw text
-		if parsedNode.source != null && !parsedNode.source.empty():
+		if parsedNode.source != null && !parsedNode.source.is_empty():
 			nodeCompiled.sourceId = register_string(
 				parsedNode.source, parsedNode.name, "line:" + parsedNode.name, 0, []
 			)
@@ -204,13 +204,13 @@ func register_string(
 	nodeName: String,
 	id: String = "",
 	lineNumber: int = -1,
-	tags: PoolStringArray = []
+	tags: PackedStringArray = []
 ) -> String:
 	var lineIdUsed: String
 
 	var implicit: bool
 
-	if id.empty():
+	if id.is_empty():
 		lineIdUsed = "%s-%s-%d" % [self._fileName.get_file(), nodeName, self._stringCount]
 		self._stringCount += 1
 
@@ -311,7 +311,7 @@ func generate_line(node, statement, line):
 
 	var expressionCount = line.substitutions.size()
 
-	while !line.substitutions.empty():
+	while !line.substitutions.is_empty():
 		var inlineExpression = line.substitutions.pop_back()
 		generate_expression(node, inlineExpression.expression)
 
@@ -342,7 +342,7 @@ func generate_shortcut_group(node, shortcutGroup):
 
 		var expressionCount = option.line.substitutions.size()
 
-		while !option.line.substitutions.empty():
+		while !option.line.substitutions.is_empty():
 			var inlineExpression = option.line.substitutions.pop_back()
 			generate_expression(node, inlineExpression.expression)
 		var labelLineId: String = option.line.lineid
@@ -385,7 +385,7 @@ func generate_shortcut_group(node, shortcutGroup):
 #blocks are just groups of statements
 func generate_block(node, statements: Array = []):
 	# print("generating block")
-	if !statements.empty():
+	if !statements.is_empty():
 		for statement in statements:
 			generate_statement(node, statement)
 
@@ -431,7 +431,7 @@ func generate_option(node, option):
 
 		var expressionCount = option.line.substitutions.size()
 
-		while !option.line.substitutions.empty():
+		while !option.line.substitutions.is_empty():
 			var inLineExpression = option.line.substitutions.pop_back()
 			generate_expression(node, inLineExpression.expression)
 
@@ -564,18 +564,18 @@ func clear_errors() -> void:
 
 
 static func print_tokens(nodeName: String, tokens: Array = []):
-	var list: PoolStringArray = []
+	var list: PackedStringArray = []
 	for token in tokens:
 		list.append(
 			(
 				"\t [%14s] %s (%s line %s)\n"
 				% [
 					token.lexerState,
-					YarnGlobals.get_script().token_type_name(token.type),
+					YarnGlobals.token_type_name(token.type),
 					token.value,
 					token.lineNumber
 				]
 			)
 		)
 	print("Node[%s] Tokens:" % nodeName)
-	print(list.join(""))
+	print("".join(list))

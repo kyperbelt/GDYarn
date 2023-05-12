@@ -1,12 +1,12 @@
-tool
+@tool
 extends EditorPlugin
 
 const CompilerInspector: Script = preload("res://addons/gdyarn/ui/compiler_inspector.gd")
 const LocalizerScene: PackedScene = preload("res://addons/gdyarn/ui/LocalizerGui.tscn")
 
 var Autoloads: Dictionary = {
-	"NumberPlurals": "res://addons/gdyarn/autoloads/number_plurals.gd",
-	"YarnGlobals": "res://addons/gdyarn/autoloads/execution_states.gd",
+	# "NumberPlurals": "res://addons/gdyarn/autoloads/number_plurals.gd",
+	# "YarnGlobals": "res://addons/gdyarn/autoloads/execution_states.gd",
 	# "GDYarnUtils" : "res://addons/gdyarn/autoloads/gdyarn_utilities.gd"
 }
 
@@ -23,10 +23,10 @@ var yarnImporter = null
 
 
 func _enter_tree():
-	yarnImporter = YarnImporter.new()
-	add_import_plugin(yarnImporter)
+	# yarnImporter = YarnImporter.new()
+	# add_import_plugin(yarnImporter)
 
-	localizerGui = LocalizerScene.instance()
+	localizerGui = LocalizerScene.instantiate()
 	add_child(localizerGui)
 	localizerGui._initiate()
 	for auto in Autoloads.keys():
@@ -38,7 +38,7 @@ func _enter_tree():
 	compilerInspector = CompilerInspector.new()
 
 	# localizer
-	add_tool_menu_item("GDYarn Localizer", self, "open_localizer_gui")
+	# add_tool_menu_item("GDYarn Localizer", self, "open_localizer_gui")
 
 	# inspector plugin
 	add_inspector_plugin(compilerInspector)

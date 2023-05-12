@@ -6,69 +6,22 @@
 ;   [section] ; section goes between []
 ;   param=value ; assign values to parameters
 
-config_version=4
-
-_global_script_classes=[ {
-"base": "Resource",
-"class": "CompiledYarnProgram",
-"language": "GDScript",
-"path": "res://addons/gdyarn/compiled_yarn_program.gd"
-}, {
-"base": "Reference",
-"class": "MarkupRegion",
-"language": "GDScript",
-"path": "res://addons/gdyarn/core/dialogue/markup_regions.gd"
-}, {
-"base": "Reference",
-"class": "Value",
-"language": "GDScript",
-"path": "res://addons/gdyarn/core/value.gd"
-}, {
-"base": "Node",
-"class": "VariableStorage",
-"language": "GDScript",
-"path": "res://addons/gdyarn/core/variable_storage.gd"
-}, {
-"base": "Control",
-"class": "YarnDisplay",
-"language": "GDScript",
-"path": "res://addons/gdyarn/yarn_gui.gd"
-}, {
-"base": "Resource",
-"class": "YarnFile",
-"language": "GDScript",
-"path": "res://addons/gdyarn/yarnfile.gd"
-}, {
-"base": "EditorImportPlugin",
-"class": "YarnImporter",
-"language": "GDScript",
-"path": "res://addons/gdyarn/yarn_importer.gd"
-} ]
-_global_script_class_icons={
-"CompiledYarnProgram": "",
-"MarkupRegion": "",
-"Value": "",
-"VariableStorage": "res://addons/gdyarn/assets/storage.png",
-"YarnDisplay": "res://addons/gdyarn/assets/display.PNG",
-"YarnFile": "",
-"YarnImporter": ""
-}
+config_version=5
 
 [application]
 
 config/name="GDYarn"
-run/main_scene="res://test.tscn"
+config/features=PackedStringArray("4.0")
 config/icon="res://icon.png"
 
-[autoload]
+[dotnet]
 
-NumberPlurals="*res://addons/gdyarn/autoloads/number_plurals.gd"
-YarnGlobals="*res://addons/gdyarn/autoloads/execution_states.gd"
+project/assembly_name="GDYarn"
 
 [editor_plugins]
 
-enabled=PoolStringArray( "res://addons/gdyarn/plugin.cfg" )
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [locale]
 
-locale_filter=[ 0, [  ] ]
+locale_filter=[0, []]

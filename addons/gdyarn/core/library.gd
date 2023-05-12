@@ -1,6 +1,4 @@
-extends Object
-
-const FunctionInfo = preload("res://addons/gdyarn/core/function_info.gd")
+class_name Library
 
 var functions: Dictionary = {}  # String , FunctionInfo
 
@@ -14,11 +12,11 @@ func get_function(name: String) -> FunctionInfo:
 
 
 func import_library(other) -> void:
-	YarnGlobals.get_script().merge_dir(functions, other.functions)
+	YarnGlobals.merge_dir(functions, other.functions)
 
 
 func register_function(
-	name: String, paramCount: int, function: FuncRef, returnsValue: bool
+	name: String, paramCount: int, function: Callable, returnsValue: bool
 ) -> void:
 	var functionInfo: FunctionInfo = FunctionInfo.new(name, paramCount, function, returnsValue)
 	functions[name] = functionInfo

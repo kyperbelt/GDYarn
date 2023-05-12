@@ -17,7 +17,7 @@ func _init(value):
 
 func set_value(value):
 	match typeof(value):
-		TYPE_REAL, TYPE_INT:
+		TYPE_FLOAT, TYPE_INT:
 			set_number(value)
 		TYPE_BOOL:
 			set_boolean(value)

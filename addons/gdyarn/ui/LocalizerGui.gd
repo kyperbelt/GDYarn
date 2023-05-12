@@ -1,5 +1,5 @@
-tool
-extends WindowDialog
+@tool
+extends Window
 
 const LOCALES = [
 	"aa",
@@ -367,25 +367,25 @@ const LOCALES = [
 	"zu_ZA"
 ]
 
-export(NodePath) var localizationListPath
-export(NodePath) var NormalNamePath
+@export var localizationListPath: NodePath
+@export var NormalNamePath: NodePath
 
 
 func _initiate():
-	self.popup_exclusive = true
+	self.exclusive = true
 	var localizationList = get_node(localizationListPath)
 	for locale in LOCALES:
 		localizationList.add_item(TranslationServer.get_locale_name(locale))
 
 	localizationList.update()
-	localizationList.connect("item_selected", self, "localization_selected")
+	localizationList.connect("item_selected", Callable(self, "localization_selected"))
 
 
 func popup_centered(vec2: Vector2 = Vector2(0, 0)) -> void:
 	var ll: OptionButton = get_node(localizationListPath)
 	ll.select(get_current_locale())
 	localization_selected(ll.selected)
-	.popup_centered(vec2)
+	super.popup_centered(vec2)
 
 
 func localization_selected(index: int):

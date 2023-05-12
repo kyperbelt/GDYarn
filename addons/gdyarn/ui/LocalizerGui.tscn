@@ -2,11 +2,11 @@
 
 [ext_resource path="res://addons/gdyarn/ui/LocalizerGui.gd" type="Script" id=1]
 
-[node name="WindowDialog" type="WindowDialog"]
-margin_left = 178.0
-margin_top = 97.0
-margin_right = 889.0
-margin_bottom = 495.0
+[node name="Window" type="Window"]
+offset_left = 178.0
+offset_top = 97.0
+offset_right = 889.0
+offset_bottom = 495.0
 window_title = "GDYarn Localizer"
 script = ExtResource( 1 )
 __meta__ = {
@@ -16,8 +16,8 @@ localizationListPath = NodePath("Vmain/BottomHalf/LocalizationOptions/Localizati
 NormalNamePath = NodePath("Vmain/BottomHalf/LocalizationOptions/NormalName")
 
 [node name="Vmain" type="VBoxContainer" parent="."]
-margin_right = 711.0
-margin_bottom = 395.0
+offset_right = 711.0
+offset_bottom = 395.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 __meta__ = {
@@ -25,14 +25,14 @@ __meta__ = {
 }
 
 [node name="Heading" type="HBoxContainer" parent="Vmain"]
-margin_right = 711.0
-margin_bottom = 66.0
+offset_right = 711.0
+offset_bottom = 66.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Label" type="Label" parent="Vmain/Heading"]
-margin_right = 711.0
-margin_bottom = 66.0
+offset_right = 711.0
+offset_bottom = 66.0
 size_flags_horizontal = 3
 size_flags_vertical = 7
 text = "Test"
@@ -41,36 +41,36 @@ valign = 1
 autowrap = true
 
 [node name="OriginalFile" type="HBoxContainer" parent="Vmain"]
-margin_top = 70.0
-margin_right = 711.0
-margin_bottom = 94.0
+offset_top = 70.0
+offset_right = 711.0
+offset_bottom = 94.0
 
 [node name="Label" type="Label" parent="Vmain/OriginalFile"]
-margin_top = 5.0
-margin_right = 131.0
-margin_bottom = 19.0
+offset_top = 5.0
+offset_right = 131.0
+offset_bottom = 19.0
 size_flags_horizontal = 3
 text = "Original File:"
 align = 2
 
 [node name="LineEdit" type="LineEdit" parent="Vmain/OriginalFile"]
-margin_left = 135.0
-margin_right = 575.0
-margin_bottom = 24.0
+offset_left = 135.0
+offset_right = 575.0
+offset_bottom = 24.0
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 3.33
 
 [node name="Button" type="Button" parent="Vmain/OriginalFile"]
-margin_left = 579.0
-margin_right = 638.0
-margin_bottom = 24.0
+offset_left = 579.0
+offset_right = 638.0
+offset_bottom = 24.0
 size_flags_horizontal = 2
 text = "Browse"
 
 [node name="HSeparator" type="HSeparator" parent="Vmain"]
-margin_top = 98.0
-margin_right = 711.0
-margin_bottom = 124.0
+offset_top = 98.0
+offset_right = 711.0
+offset_bottom = 124.0
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.39
 __meta__ = {
@@ -78,40 +78,40 @@ __meta__ = {
 }
 
 [node name="BottomHalf" type="VBoxContainer" parent="Vmain"]
-margin_top = 128.0
-margin_right = 711.0
-margin_bottom = 395.0
+offset_top = 128.0
+offset_right = 711.0
+offset_bottom = 395.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 size_flags_stretch_ratio = 4.0
 
 [node name="LocalizationOptions" type="HBoxContainer" parent="Vmain/BottomHalf"]
-margin_right = 711.0
-margin_bottom = 20.0
+offset_right = 711.0
+offset_bottom = 20.0
 
 [node name="Control" type="Control" parent="Vmain/BottomHalf/LocalizationOptions"]
-margin_right = 132.0
-margin_bottom = 20.0
+offset_right = 132.0
+offset_bottom = 20.0
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.84
 
 [node name="LocalizationList" type="OptionButton" parent="Vmain/BottomHalf/LocalizationOptions"]
-margin_left = 136.0
-margin_right = 293.0
-margin_bottom = 20.0
+offset_left = 136.0
+offset_right = 293.0
+offset_bottom = 20.0
 size_flags_horizontal = 3
 
 [node name="NormalName" type="Label" parent="Vmain/BottomHalf/LocalizationOptions"]
-margin_left = 297.0
-margin_top = 3.0
-margin_right = 455.0
-margin_bottom = 17.0
+offset_left = 297.0
+offset_top = 3.0
+offset_right = 455.0
+offset_bottom = 17.0
 size_flags_horizontal = 3
 
 [node name="AddLocalization" type="Button" parent="Vmain/BottomHalf/LocalizationOptions"]
-margin_left = 459.0
-margin_right = 559.0
-margin_bottom = 20.0
+offset_left = 459.0
+offset_right = 559.0
+offset_bottom = 20.0
 size_flags_horizontal = 2
 size_flags_stretch_ratio = 1.6
 text = "+ Localization"
