@@ -1,3 +1,4 @@
+class_name VirtualMachine
 extends Object
 
 signal resumed

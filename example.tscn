@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://qyjkxguvmvj8"]
+
+[ext_resource type="Script" path="res://example.gd" id="1_rlwvp"]
+[ext_resource type="Script" path="res://addons/gdyarn/core/variable_storage.gd" id="2_1kttv"]
+
+[node name="example" type="Node2D"]
+script = ExtResource("1_rlwvp")
+
+[node name="VariableStorage" type="Node" parent="."]
+script = ExtResource("2_1kttv")

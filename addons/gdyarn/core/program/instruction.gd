@@ -1,3 +1,4 @@
+class_name YarnInstruction
 extends Object
 
 const Operand = preload("res://addons/gdyarn/core/program/operand.gd")

@@ -1,12 +1,12 @@
-class_name YarnDIalogue
+class_name YarnDialogue
 #consts
 const DEFAULT_START: String = "Start"
 
 #classes
 
 # const StandardLibrary = preload("res://addons/gdyarn/core/libraries/standard.gd")
-const YarnProgram = preload("res://addons/gdyarn/core/program/program.gd")
-const VirtualMachine = preload("res://addons/gdyarn/core/virtual_machine.gd")
+# const YarnProgram = preload("res://addons/gdyarn/core/program/program.gd")
+# const VirtualMachine = preload("res://addons/gdyarn/core/virtual_machine.gd")
 # const YarnLibrary = preload("res://addons/gdyarn/core/library.gd")
 
 var library
@@ -83,7 +83,7 @@ func stop():
 
 
 func get_all_nodes() -> Array:
-	return _program.yarnNodes.keys()
+	return _program.yarn_nodes.keys()
 
 
 func current_node() -> String:
@@ -102,7 +102,7 @@ func get_node_id(name: String) -> String:
 
 
 func get_program_strings() -> Dictionary:
-	return _program.yarnStrings
+	return _program.yarn_strings
 
 
 func unloadAll(clear_visited: bool = true):
@@ -133,7 +133,7 @@ func add_program(program):
 	if _program == null:
 		set_program(program)
 	else:
-		_program = YarnGlobals.combine_programs([_program, program])
+		_program = ProgramUtils.combine_programs([_program, program])
 
 
 func analyze(context):

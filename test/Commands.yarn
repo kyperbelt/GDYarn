@@ -1,6 +1,7 @@
 title: Start
 ---
 // Testing commands
+<<set $car_speed to 10>>
 
 <<flip Harley3 +1>>
 

@@ -1,0 +1,66 @@
+2024-01-11 07:23:07 - Neovide panicked with the message 'called `Result::unwrap()` on an `Err` value: Connection(IoError(Custom { kind: Other, error: UnknownError }))'. (File: /home/kyperbelt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/winit-0.29.4/src/platform_impl/linux/x11/window.rs; Line: 1313, Column: 14)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: __libc_start_call_main
+             at ./csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+  16: __libc_start_main_impl
+             at ./csu/../csu/libc-start.c:392:3
+  17: <unknown>
+
+2024-01-12 08:43:44 - Neovide panicked with the message 'called `Result::unwrap()` on an `Err` value: Connection(IoError(Custom { kind: Other, error: UnknownError }))'. (File: /home/kyperbelt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/winit-0.29.4/src/platform_impl/linux/x11/window.rs; Line: 1313, Column: 14)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: __libc_start_call_main
+             at ./csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+  16: __libc_start_main_impl
+             at ./csu/../csu/libc-start.c:392:3
+  17: <unknown>
+
+2024-01-13 11:06:58 - Neovide panicked with the message 'called `Result::unwrap()` on an `Err` value: Connection(IoError(Custom { kind: Other, error: UnknownError }))'. (File: /home/kyperbelt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/winit-0.29.4/src/platform_impl/linux/x11/window.rs; Line: 1313, Column: 14)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: __libc_start_call_main
+             at ./csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+  16: __libc_start_main_impl
+             at ./csu/../csu/libc-start.c:392:3
+  17: <unknown>
+

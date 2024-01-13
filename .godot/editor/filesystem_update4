@@ -1,4 +1,0 @@
-res://test/test_lexer.gd
-res://addons/gdyarn/core/compiler/lexer.gd
-res://addons/gdyarn/utils/yarn_globals.gd
-res://addons/gdyarn/core/virtual_machine.gd

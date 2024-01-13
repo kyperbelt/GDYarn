@@ -182,7 +182,6 @@ static func _serialize_all_operands(operands) -> Array:
 # import the program at the otherfile destination
 # return null if no file exitst
 static func _import_program(filePath) -> YarnProgram:
-	var file := File.new()
 
 	var stringsPath = DEFAULT_STRINGS_FORMAT % [filePath.get_basename(), STRINGS_EXTENSION]
 	var localizedStringsPath = (
@@ -191,10 +190,11 @@ static func _import_program(filePath) -> YarnProgram:
 	)
 	var strings: PackedStringArray
 
-	if file.file_exists(localizedStringsPath):
-		file.open(localizedStringsPath, File.READ)
-	elif file.file_exists(stringsPath):
-		file.open(stringsPath, File.READ)
+	var file : FileAccess
+	if FileAccess.file_exists(localizedStringsPath):
+		file = FileAccess.open(localizedStringsPath, FileAccess.READ)
+	elif FileAccess.file_exists(stringsPath):
+		file = FileAccess.open(stringsPath, FileAccess.READ)
 	else:
 		printerr(
 			(
@@ -206,16 +206,16 @@ static func _import_program(filePath) -> YarnProgram:
 	strings = file.get_as_text().split("\n")
 	file.close()
 
-	strings.remove(0)
-	file = File.new()
-
-	file.open(filePath, File.READ)
-	var data: Dictionary = str_to_var(file.get_as_text())
+	strings.remove_at(0)
 	var stringsTable = _load_lines(strings)
+
+	file = FileAccess.open(filePath, FileAccess.READ)
+	var data: Dictionary = str_to_var(file.get_as_text())
 	file.close()
 
 	var program = _load_program(data)
-	program.yarnStrings = stringsTable
+	program.yarn_strings = stringsTable
+	# FIXME: We should use yarn projects instead of programs for this
 
 	return program
 
@@ -223,9 +223,9 @@ static func _import_program(filePath) -> YarnProgram:
 static func _load_program(data: Dictionary) -> YarnProgram:
 	var program = YarnProgram.new()
 
-	program.programName = data[PROGRAM_NAME]
+	program.program_name = data[PROGRAM_NAME]
 	# program.yarnStrings = data[PROGRAM_LINE_INFO]
-	program.yarnNodes = _load_nodes(data[PROGRAM_NODES])
+	program.yarn_nodes = _load_nodes(data[PROGRAM_NODES])
 
 	return program
 
@@ -234,17 +234,17 @@ static func _load_nodes(nodes: Array) -> Dictionary:
 	var result := {}
 	for node in nodes:
 		var yarn_node = _load_node(node)
-		result[yarn_node.nodeName] = yarn_node
+		result[yarn_node.node_name] = yarn_node
 	return result
 
 
 static func _load_node(node):
 	var yarn_node := YarnNode.new()
 
-	yarn_node.nodeName = node[NODE_NAME]
+	yarn_node.node_name = node[NODE_NAME]
 	yarn_node.labels = node[NODE_LABELS]
 	yarn_node.tags = node[NODE_TAGS]
-	yarn_node.sourceId = node[NODE_SOURCEID]
+	yarn_node.source_id = node[NODE_SOURCEID]
 	yarn_node.instructions = _load_instructions(node[NODE_INSTRUCTIONS])
 
 	return yarn_node

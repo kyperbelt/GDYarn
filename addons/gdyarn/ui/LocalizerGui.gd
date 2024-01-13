@@ -381,7 +381,7 @@ func _initiate():
 	localizationList.connect("item_selected", Callable(self, "localization_selected"))
 
 
-func popup_centered(vec2: Vector2 = Vector2(0, 0)) -> void:
+func popup_centered(vec2: Vector2i = Vector2i(0, 0)) -> void:
 	var ll: OptionButton = get_node(localizationListPath)
 	ll.select(get_current_locale())
 	localization_selected(ll.selected)

@@ -26,9 +26,10 @@ func _enter_tree():
 	# yarnImporter = YarnImporter.new()
 	# add_import_plugin(yarnImporter)
 
-	localizerGui = LocalizerScene.instantiate()
-	add_child(localizerGui)
-	localizerGui._initiate()
+	# localizerGui = LocalizerScene.instantiate()
+	# add_child(localizerGui)
+	# localizerGui._initiate()
+
 	for auto in Autoloads.keys():
 		add_autoload_singleton(auto, Autoloads[auto])
 

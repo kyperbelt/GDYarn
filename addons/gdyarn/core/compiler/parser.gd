@@ -1,10 +1,14 @@
+class_name YarnParser
 # const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
-const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
+# const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
 
-var error = OK
+const Token := YarnLexer.Token
+const TokenType := YarnGlobals.TokenType
+
+var error := OK
 var currentNodeName = "Start"
 
-var _tokens: Array = []  #token
+var _tokens: Array[Token] = []  #token
 
 
 func _init(tokens):
@@ -14,56 +18,89 @@ func _init(tokens):
 #how to handle operations
 enum Associativity { Left, Right, None }
 
+## parse the entire token stack collecting as many nodes as possible
+func parse_nodes()->Array[YarnNode]:
+	var nodes: Array[YarnNode] = []  #YarnNode
+	while _tokens.size() > 0 && !next_symbol_is([TokenType.EndOfInput]):
+		var yarn_node := parse_node()
+		print("parsed node %s" % [yarn_node.name])
+		if error != OK:
+			printerr("error parsing node")
+			break
+		nodes.append(yarn_node)
+		if next_symbol_is([TokenType.NodeDelimiter]):
+			expect_symbol([TokenType.NodeDelimiter])
+		else:
+			var name_of_top_of_stack = YarnGlobals.token_name(_tokens.front().type)
+			printerr("expected node delimiter")
+			error = ERR_INVALID_DATA
+			break
+	return nodes
 
-func parse_node(name: String = "Start") -> YarnNode:
-	currentNodeName = name
-	return YarnNode.new(name, null, self)
+## parse a single node 
+func parse_node() -> YarnNode:
+	return YarnNode.new(null, self)
+
 
 
 func next_symbol_is(validTypes: Array, line: int = -1) -> bool:
+	if (self._tokens.size() == 0):
+		return false
 	var type = self._tokens.front().type
 	for validType in validTypes:
-		if type == validType && (line == -1 || line == self._tokens.front().lineNumber):
+		if type == validType && (line == -1 || line == self._tokens.front().line_number):
 			return true
 	return false
 
 
-#look ahead for `<<` and `else`
+## look ahead for `<<` and `else`
+## This looks at the next tokens without consuming them
+## if they are not in the right order of the validTypes given
+## then this will return false
 func next_symbols_are(validTypes: Array, line: int = -1) -> bool:
-	var temp = [] + _tokens
+	if self._tokens.size() < validTypes.size():
+		return false
+	var temp: Array[Token] = Array(self._tokens.duplicate())
 	for type in validTypes:
 		if temp.pop_front().type != type:
 			return false
-	return line == -1 || line == self._tokens.front().lineNumber
+	return line == -1 || line == self._tokens.front().line_number
 
 
-func expect_symbol(tokenTypes: Array = []) -> Lexer.Token:
-	var t = self._tokens.pop_front() as Lexer.Token
-	var size = tokenTypes.size()
+## Consume the next symbol and throw an error if it is not 
+## of the expected type
+func expect_symbol(token_types: Array = []) -> Token:
+	var t := self._tokens.pop_front() as Token
+	print("token consumed %s" % [t._to_string()])
+	var size = token_types.size()
 
 	if size == 0:
-		if t.type == YarnGlobals.TokenType.EndOfInput:
+		if t.type == TokenType.EndOfInput:
 			printerr("unexpected end of input")
 			error = ERR_INVALID_DATA
 			return null
 		return t
 
-	for type in tokenTypes:
+	for type in token_types:
 		if t.type == type:
 			return t
-	var expectedTypes: String = " "
 
-	for tokenType in tokenTypes:
-		expectedTypes += YarnGlobals.get_script().token_type_name(tokenType) + " "
+	var expected_types: String = " "
+
+	for token_type in token_types:
+		expected_types += YarnGlobals.token_name(token_type) + " "
+
 	# expectedTypes+= ""
 
+	# TODO: Move this to Some type of Diagnostic system, do not print it in place
 	printerr(
 		(
-			"unexpected token: Expexted [%s] but got [ %s ] @(%s,%s)"
+			"unexpected token: Expexted [%s] but got [%s<%s>] @(%s,%s)"
 			% [
-				expectedTypes,
-				YarnGlobals.get_script().token_type_name(t.type),
-				t.lineNumber,
+				expected_types,
+				YarnGlobals.token_name(t.type),
+				t.value,
+				t.line_number,
 				t.column
 			]
 		)
@@ -76,29 +113,30 @@ func expect_symbol(tokenTypes: Array = []) -> Lexer.Token:
 # 	return ("%*s| %s%s"% [indentLevel*2,"",input,("" if !newLine else "\n")])
 
 
-func tokens() -> Array:
+func tokens() -> Array[Token]:
 	return _tokens
 
 
 class ParseNode:
 	var parent: ParseNode
-	var lineNumber: int
-	var tags: Array  #<String>
+	var line_number: int
+	var tags: Array[String]  #<String>
 
 	func _init(parent: ParseNode, parser):
 		self.parent = parent
 		var tokens: Array = parser.tokens() as Array
 		if tokens.size() > 0:
-			lineNumber = tokens.front().lineNumber
+			line_number = tokens.front().line_number
 		else:
-			lineNumber = -1
+			line_number = -1
 		tags = []
 
 	func tree_string(indentLevel: int) -> String:
 		return "NotImplemented"
 
 	func tags_to_string(indentLevel: int) -> String:
-		return "%s" % "TAGS<tags_to_string>NOTIMPLEMENTED"
+		var tags_packed := PackedStringArray(tags)
+		return ", ".join(tags_packed)
 
 	func get_node_parent() -> YarnNode:
 		var node = self
@@ -120,30 +158,80 @@ class ParseNode:
 		self.parent = parent
 
 
-#this is a Yarn Node - contains all the text
+## this is a Yarn Node - contains all the meta data and statements
 class YarnNode:
 	extends ParseNode
 
-	var name: String
+	var name: String # the title in the header
 	var source: String
-
-	var editorNodeTags: Array = []  #tags defined in node header
+	var meta_data : Dictionary = {} # information from the header that is not title or tags
 	var statements: Array = []  # Statement
 	var hasOptions := false
 
-	func _init(name: String, parent: ParseNode, parser):
+	func _init(parent: ParseNode, parser,check_headers: bool = true,title :String = ""):
 		super(parent, parser)
-		self.name = name
+		name = title
+		# collect all header information and meta data 
+		# this includes title and tags 
+		# and any other information that is not a statement
+		# TODO: 
+		if check_headers:
+			_parse_headers(parser)
+
 		while (
 			parser.tokens().size() > 0
 			&& !parser.next_symbol_is(
-				[YarnGlobals.TokenType.Dedent, YarnGlobals.TokenType.EndOfInput]
+				[TokenType.Dedent, TokenType.EndOfInput, TokenType.NodeDelimiter]
 			)
 			&& parser.error == OK
 		):
-			statements.append(Statement.new(self, parser))
+			var statement := Statement.new(self, parser)
+			if parser.error != OK:
+				printerr("error parsing statement")
+				break
+			statements.append(statement)
+			print("top_token=%s value=%s" % [YarnGlobals.token_name(parser.tokens().front().type), parser.tokens().front().value])
 			#print(statements.size())
 
+		print("top_token=%s" % [YarnGlobals.token_name(parser.tokens().front().type)])
+		# if parser.next_symbol_is([TokenType.NodeDelimiter]):
+		# 	parser.expect_symbol()
+
+	func _parse_headers(parser:YarnParser)->void:
+		while (parser.tokens().size() > 0 && !parser.next_symbol_is([TokenType.EndOfInput, TokenType.HeaderDelimiter])):
+			# get title if title 
+			# get tags split tags by comma
+			# check for duplicate headers?
+			var identifier:Token= parser.expect_symbol([TokenType.Identifier])
+			parser.expect_symbol([TokenType.Colon]) 
+			if parser.next_symbol_is([TokenType.Text]):
+				var value :Token= parser.expect_symbol([TokenType.Text])
+
+				if identifier.value == &"title" && (name == null || name.is_empty()): 
+					name = value.value 
+				elif identifier.value == &"tags": 
+					var split_tags := value.value.split(',')
+					for tag in split_tags:
+						tags.append(tag.strip_edges(true, true))
+				else:
+					meta_data[identifier.value] = value.value	
+			
+		# Make sure that title is there for each node
+		if name == null || name.is_empty():
+			printerr("no title in header found")
+			parser.error = ERR_INVALID_DATA
+			
+		if parser.next_symbol_is([TokenType.HeaderDelimiter]):
+			print("header delimiter found")
+			parser.expect_symbol([TokenType.HeaderDelimiter])
+		else:
+			printerr("no header delimiter found")
+			parser.error = ERR_INVALID_DATA
+		# parser.expect_symbol([TokenType.HeaderDelimiter])
+		
+		# parse statements in node body until you hit an end of node
+
+	
 	# WARNING: DO NOT REMOVE SINCE THIS IS THE WAY WE CHECK CLASS
 	func yarn_node():
 		pass
@@ -151,10 +239,14 @@ class YarnNode:
 	func tree_string(indentLevel: int) -> String:
 		var info: PackedStringArray = []
 
+		info.append(tab(indentLevel, "Node: %s" % name))
+		info.append(tab(indentLevel + 1, "Tags: %s" % tags_to_string(indentLevel + 1)))
+		if (meta_data.size() > 0):
+			info.append(tab(indentLevel+1, "Meta Data:"))
+			for key in meta_data.keys():
+				info.append(tab(indentLevel + 2, "%s: %s" % [key, meta_data[key]]))
 		for statement in statements:
 			info.append(statement.tree_string(indentLevel + 1))
-
-		#print("printing TREEEEEEEEEEEEE")
 
 		return "".join(info)
 
@@ -173,12 +265,12 @@ class InlineExpression:
 
 	func _init(parent: ParseNode, parser):
 		super(parent, parser)
-		parser.expect_symbol([YarnGlobals.TokenType.ExpressionFunctionStart])
-		expression = ExpressionNode.parse(self, parser)
-		parser.expect_symbol([YarnGlobals.TokenType.ExpressionFunctionEnd])
+		parser.expect_symbol([TokenType.ExpressionFunctionStart])
+		expression = ExpressionNode.parse_expressions(self, parser)
+		parser.expect_symbol([TokenType.ExpressionFunctionEnd])
 
 	static func can_parse(parser):
-		return parser.next_symbol_is([YarnGlobals.TokenType.ExpressionFunctionStart])
+		return parser.next_symbol_is([TokenType.ExpressionFunctionStart])
 
 	#TODO make tree string nicer
 	#     with added information about the expression
@@ -196,10 +288,10 @@ class FormatFunction:
 	func _init(parent: ParseNode, parser, expressionCount: int):
 		super(parent, parser)
 		format_text = "["
-		parser.expect_symbol([YarnGlobals.TokenType.FormatFunctionStart])
+		parser.expect_symbol([TokenType.FormatFunctionStart])
 
-		while !parser.next_symbol_is([YarnGlobals.TokenType.FormatFunctionEnd]):
-			if parser.next_symbol_is([YarnGlobals.TokenType.Text]):
+		while !parser.next_symbol_is([TokenType.FormatFunctionEnd]):
+			if parser.next_symbol_is([TokenType.Text]):
 				format_text += parser.expect_symbol().value
 
 			if InlineExpression.can_parse(parser):
@@ -209,7 +301,7 @@ class FormatFunction:
 		format_text += "]"
 
 	static func can_parse(parser):
-		return parser.next_symbol_is([YarnGlobals.TokenType.FormatFunctionStart])
+		return parser.next_symbol_is([TokenType.FormatFunctionStart])
 
 	#TODO Make format prettier and add more information
 	func tree_string(indentLevel: int) -> String:
@@ -220,12 +312,12 @@ class LineNode:
 	extends ParseNode
 	var line_text: String
 	#TODO: FIXME: right now we are putting the formatfunctions and inline expressions in the same
-	#             list but if at some point we want to stronly type our sub list we need to make a new
+	#             list but if at some point we want to strongly type our sub list we need to make a new
 	#             parse node that can have either an InlineExpression or a FunctionFormat
 	#             .. This is a consideration for Godot4.x
 	var substitutions: Array = []  # of type <InlineExpression |& FormatFunction>
 	var lineid: String = ""
-	var lineTags: PackedStringArray = []
+	var line_tags: PackedStringArray = []
 
 	# NOTE: If format function an inline functions are both present
 	# returns a line in the format "Some text {0} and some other {1}[format "{2}" key="value" key="value"]"
@@ -234,10 +326,10 @@ class LineNode:
 		super(parent, parser)
 		while parser.next_symbol_is(
 			[
-				YarnGlobals.TokenType.FormatFunctionStart,
-				YarnGlobals.TokenType.ExpressionFunctionStart,
-				YarnGlobals.TokenType.Text,
-				YarnGlobals.TokenType.TagMarker
+				TokenType.FormatFunctionStart,
+				TokenType.ExpressionFunctionStart,
+				TokenType.Text,
+				TokenType.TagMarker
 			]
 		):
 			if FormatFunction.can_parse(parser):
@@ -250,18 +342,18 @@ class LineNode:
 				line_text += "{%d}" % substitutions.size()
 				substitutions.append(ie)
 			elif parser.next_symbols_are(
-				[YarnGlobals.TokenType.TagMarker, YarnGlobals.TokenType.Identifier]
+				[TokenType.TagMarker, TokenType.Identifier]
 			):
 				parser.expect_symbol()
-				var tagToken = parser.expect_symbol([YarnGlobals.TokenType.Identifier])
+				var tagToken = parser.expect_symbol([TokenType.Identifier])
 				if tagToken.value.begins_with("line:"):
 					if lineid.is_empty():
 						lineid = tagToken.value
 					else:
 						printerr(
 							(
-								"Too many lineTags @[%s:%d]"
-								% [parser.currentNodeName, tagToken.lineNumber]
+								"Too many line_tags @[%s:%d]"
+								% [parser.currentNodeName, tagToken.line_number]
 							)
 						)
 						return
@@ -270,7 +362,7 @@ class LineNode:
 
 			else:
 				var tt = parser.expect_symbol()
-				if tt.lineNumber == lineNumber && !(tt.type == YarnGlobals.TokenType.BeginCommand):
+				if tt.line_number == line_number && !(tt.type == TokenType.BeginCommand):
 					line_text += tt.value
 				else:
 					parser._tokens.push_front(tt)
@@ -287,7 +379,7 @@ class Statement:
 	var type: int
 	var block: Block
 	var ifStatement: IfStatement
-	var optionStatement: OptionStatement
+	# var optionStatement: OptionStatement
 	var assignment: Assignment
 	var shortcutOptionGroup: ShortcutOptionGroup
 	var customCommand: CustomCommand
@@ -295,40 +387,40 @@ class Statement:
 
 	func _init(parent: ParseNode, parser):
 		super(parent, parser)
+		print("hello")
 		if parser.error != OK:
 			return
 
 		if Block.can_parse(parser):
-			# printerr("parsing a block")
+			printerr("parsing a block")
 			block = Block.new(self, parser)
 			type = Type.Block
 		elif IfStatement.can_parse(parser):
-			# printerr("parsing if statement")
+			printerr("parsing if statement")
 			ifStatement = IfStatement.new(self, parser)
 			type = Type.IfStatement
-		elif OptionStatement.can_parse(parser):
-			# printerr("parsing an option statemetn")
-			optionStatement = OptionStatement.new(self, parser)
-			type = Type.OptionStatement
 		elif Assignment.can_parse(parser):
+			printerr("parsing assignment")
 			assignment = Assignment.new(self, parser)
 			type = Type.AssignmentStatement
 		elif ShortcutOptionGroup.can_parse(parser):
-			# printerr("parsing shortcut option group")
+			# print("ST:%s[value=%s]" % [YarnGlobals.token_name(parser.tokens().front().type), parser.tokens().front().value])
+			printerr("parsing shortcut option group")
 			shortcutOptionGroup = ShortcutOptionGroup.new(self, parser)
 			type = Type.ShortcutOptionGroup
 		elif CustomCommand.can_parse(parser):
-			# printerr("parsing commands")
+			printerr("parsing commands")
 			customCommand = CustomCommand.new(self, parser)
 			type = Type.CustomCommand
-		elif parser.next_symbol_is([YarnGlobals.TokenType.Text]):
-			# line = parser.expect_symbol([YarnGlobals.TokenType.Text]).value
+		elif parser.next_symbol_is([TokenType.Text]):
+			printerr("parsing line")
+			# line = parser.expect_symbol([TokenType.Text]).value
 			# type = Type.Line
 			line = LineNode.new(self, parser)
 			type = Type.Line
-			# printerr("new line found == ", line.line_text)
-			# parser.expect_symbol([YarnGlobals.TokenType.EndOfLine])
+			# parser.expect_symbol([TokenType.EndOfLine])
 		else:
+
 			printerr(
 				(
 					"expected a statement but got %s instead. (probably an inbalanced if statement)"
@@ -338,15 +430,6 @@ class Statement:
 			parser.error = ERR_PARSE_ERROR
 			return
 
-		var tags: Array = []
-
-		# while parser.next_symbol_is([YarnGlobals.TokenType.TagMarker]):
-		# 	parser.expect_symbol([YarnGlobals.TokenType.TagMarker])
-		# 	var tag : String = parser.expect_symbol([YarnGlobals.TokenType.Identifier]).value
-		# 	tags.append(tag)
-
-		# if(tags.size()>0):
-		# 	self.tags = tags
 
 	func tree_string(indentLevel: int) -> String:
 		var info: PackedStringArray = []
@@ -358,8 +441,8 @@ class Statement:
 				info.append(ifStatement.tree_string(indentLevel))
 			Type.AssignmentStatement:
 				info.append(assignment.tree_string(indentLevel))
-			Type.OptionStatement:
-				info.append(optionStatement.tree_string(indentLevel))
+			# Type.OptionStatement:
+			# 	info.append(optionStatement.tree_string(indentLevel))
 			Type.ShortcutOptionGroup:
 				info.append(shortcutOptionGroup.tree_string(indentLevel))
 			Type.CustomCommand:
@@ -385,25 +468,27 @@ class CustomCommand:
 
 	func _init(parent: ParseNode, parser):
 		super(parent, parser)
-		parser.expect_symbol([YarnGlobals.TokenType.BeginCommand])
+		parser.expect_symbol([TokenType.BeginCommand])
 
 		var commandTokens = []
 		commandTokens.append(parser.expect_symbol())
 
-		while !parser.next_symbol_is([YarnGlobals.TokenType.EndCommand]):
-			commandTokens.append(parser.expect_symbol())
+		while !parser.next_symbol_is([TokenType.EndCommand]):
+			var token:Token = parser.expect_symbol()
+			print("token type %s" % [YarnGlobals.token_name(token.type)])
+			commandTokens.append(token)
 
-		parser.expect_symbol([YarnGlobals.TokenType.EndCommand])
+		parser.expect_symbol([TokenType.EndCommand])
 
 		#if first token is identifier and second is leftt parenthesis
 		#evaluate as function
 		if (
 			commandTokens.size() > 1
-			&& commandTokens[0].type == YarnGlobals.TokenType.Identifier
-			&& commandTokens[1].type == YarnGlobals.TokenType.LeftParen
+			&& commandTokens[0].type == TokenType.Identifier
+			&& commandTokens[1].type == TokenType.LeftParen
 		):
 			var p = get_script().new(commandTokens, parser.library)
-			var expression: ExpressionNode = ExpressionNode.parse(self, p)
+			var expression: ExpressionNode = ExpressionNode.parse_expressions(self, p)
 			type = Type.Expression
 			self.expression = expression
 		else:
@@ -422,10 +507,10 @@ class CustomCommand:
 	static func can_parse(parser) -> bool:
 		return (
 			parser.next_symbols_are(
-				[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.Text]
+				[TokenType.BeginCommand, TokenType.Text]
 			)
 			|| parser.next_symbols_are(
-				[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.Identifier]
+				[TokenType.BeginCommand, TokenType.Identifier]
 			)
 		)
 
@@ -440,13 +525,13 @@ class ShortcutOptionGroup:
 		# parse options until there is no more
 		# expect one otherwise invalid
 
-		var sIndex: int = 1
-		options.append(ShortCutOption.new(sIndex, self, parser))
-		sIndex += 1
-		while parser.next_symbol_is([YarnGlobals.TokenType.ShortcutOption]):
-			options.append(ShortCutOption.new(sIndex, self, parser))
-			sIndex += 1
-		var nameOfTopOfStack = YarnGlobals.get_script().token_type_name(parser._tokens.front().type)
+		var s_index: int = 1
+		options.append(ShortCutOption.new(s_index, self, parser))
+		s_index += 1
+		while parser.next_symbol_is([TokenType.ShortcutOption]):
+			options.append(ShortCutOption.new(s_index, self, parser))
+			s_index += 1
+		var name_of_top_of_stack = YarnGlobals.token_name(parser._tokens.front().type)
 		# printerr("eneded the shortcut group with a [%s] on top" % nameOfTopOfStack)
 
 	func tree_string(indentLevel: int) -> String:
@@ -462,7 +547,7 @@ class ShortcutOptionGroup:
 		return "".join(info)
 
 	static func can_parse(parser) -> bool:
-		return parser.next_symbol_is([YarnGlobals.TokenType.ShortcutOption])
+		return parser.next_symbol_is([TokenType.ShortcutOption])
 
 	pass
 
@@ -477,28 +562,28 @@ class ShortCutOption:
 	func _init(index: int, parent: ParseNode, parser):
 		super(parent, parser)
 		# printerr("starting shortcut option parse")
-		parser.expect_symbol([YarnGlobals.TokenType.ShortcutOption])
+		parser.expect_symbol([TokenType.ShortcutOption])
 		line = LineNode.new(self, parser)
 		# printerr(" this is a line found in shortcutoption : ", line.line_text)
 		# parse the conditional << if $x >> when it exists
-		var tags: Array = []  #string
+		var tags: Array[String] = []  #string
 
 		while (
 			parser.next_symbols_are(
-				[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.IfToken]
+				[TokenType.BeginCommand, TokenType.IfToken]
 			)
-			|| parser.next_symbol_is([YarnGlobals.TokenType.TagMarker])
+			|| parser.next_symbol_is([TokenType.TagMarker])
 		):
 			if parser.next_symbols_are(
-				[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.IfToken], lineNumber
+				[TokenType.BeginCommand, TokenType.IfToken], line_number
 			):
-				parser.expect_symbol([YarnGlobals.TokenType.BeginCommand])
-				parser.expect_symbol([YarnGlobals.TokenType.IfToken])
-				condition = ExpressionNode.parse(self, parser)
-				parser.expect_symbol([YarnGlobals.TokenType.EndCommand])
-			elif parser.next_symbol_is([YarnGlobals.TokenType.TagMarker]):
-				parser.expect_symbol([YarnGlobals.TokenType.TagMarker])
-				var tag: String = parser.expect_symbol([YarnGlobals.TokenType.Identifier]).value
+				parser.expect_symbol([TokenType.BeginCommand])
+				parser.expect_symbol([TokenType.IfToken])
+				condition = ExpressionNode.parse_expressions(self, parser)
+				parser.expect_symbol([TokenType.EndCommand])
+			elif parser.next_symbol_is([TokenType.TagMarker]):
+				parser.expect_symbol([TokenType.TagMarker])
+				var tag: String = parser.expect_symbol([TokenType.Identifier]).value
 				tags.append(tag)
 			else:
 				# printerr("could not find if or tag on the same line")
@@ -512,10 +597,10 @@ class ShortCutOption:
 
 		# parse remaining statements
 
-		if parser.next_symbol_is([YarnGlobals.TokenType.Indent]):
-			parser.expect_symbol([YarnGlobals.TokenType.Indent])
-			node = YarnNode.new("%s.%s" % [self.get_node_parent().name, index], self, parser)
-			parser.expect_symbol([YarnGlobals.TokenType.Dedent])
+		if parser.next_symbol_is([TokenType.Indent]):
+			parser.expect_symbol([TokenType.Indent])
+			node = YarnNode.new(self, parser,false,"%s.%s" % [self.get_node_parent().name, index])
+			parser.expect_symbol([TokenType.Dedent])
 
 	func tree_string(indentLevel: int) -> String:
 		var info: PackedStringArray = []
@@ -543,15 +628,15 @@ class Block:
 	func _init(parent: ParseNode, parser):
 		super(parent, parser)
 		#read indent
-		parser.expect_symbol([YarnGlobals.TokenType.Indent])
+		parser.expect_symbol([TokenType.Indent])
 
 		#keep reading statements until we hit a dedent
-		while !parser.next_symbol_is([YarnGlobals.TokenType.Dedent]):
+		while !parser.next_symbol_is([TokenType.Dedent]):
 			#parse all statements including nested blocks
 			statements.append(Statement.new(self, parser))
 
 		#clean up dedent
-		parser.expect_symbol([YarnGlobals.TokenType.Dedent])
+		parser.expect_symbol([TokenType.Dedent])
 
 	func tree_string(indentLevel: int) -> String:
 		var info: PackedStringArray = []
@@ -566,62 +651,8 @@ class Block:
 		return "".join(info)
 
 	static func can_parse(parser) -> bool:
-		return parser.next_symbol_is([YarnGlobals.TokenType.Indent])
+		return parser.next_symbol_is([TokenType.Indent])
 
-
-#Option Statements are links to other nodes
-class OptionStatement:
-	extends ParseNode
-
-	var destination: String = ""
-	var line: LineNode = null
-
-	func _init(parent: ParseNode, parser):
-		super(parent, parser)
-		# var strings : Array = []#string
-
-		#parse [[LABEL
-		parser.expect_symbol([YarnGlobals.TokenType.OptionStart])
-
-		line = LineNode.new(self, parser)
-
-		# printerr("option line[", line.line_text, "] has ", line.substitutions.size(), " subs")
-		# printerr("line inside the statement : ",line.line_text)
-		# var tokens := []
-
-		# tokens.append(parser.expect_symbol([YarnGlobals.TokenType.Text]))
-
-		#if there is a | get the next string
-		if parser.next_symbol_is([YarnGlobals.TokenType.OptionDelimit]):
-			parser.expect_symbol([YarnGlobals.TokenType.OptionDelimit])
-			var t = parser.expect_symbol(
-				[YarnGlobals.TokenType.Text, YarnGlobals.TokenType.Identifier]
-			)
-			destination = t.value
-
-		if destination.is_empty():
-			destination = line.line_text
-			line = null
-		else:
-			get_node_parent().hasOptions = true
-
-		parser.expect_symbol([YarnGlobals.TokenType.OptionEnd])
-
-		if parser.next_symbol_is([YarnGlobals.TokenType.TagMarker], lineNumber):
-			# TODO FIXME : give an error if there are too many line tags
-			parser.expect_symbol()
-			var id = parser.expect_symbol([YarnGlobals.TokenType.Identifier]).value
-			if line:
-				line.lineid = id
-
-	func tree_string(indentLevel: int) -> String:
-		if line != null:
-			return tab(indentLevel, "Option: [%s] -> %s" % [line.tree_string(0), destination])
-		else:
-			return tab(indentLevel, "Option: -> %s" % destination)
-
-	static func can_parse(parser) -> bool:
-		return parser.next_symbol_is([YarnGlobals.TokenType.OptionStart])
 
 
 class IfStatement:
@@ -634,62 +665,62 @@ class IfStatement:
 		#<<if Expression>>
 		var prime: Clause = Clause.new()
 
-		parser.expect_symbol([YarnGlobals.TokenType.BeginCommand])
-		parser.expect_symbol([YarnGlobals.TokenType.IfToken])
-		prime.expression = ExpressionNode.parse(self, parser)
-		parser.expect_symbol([YarnGlobals.TokenType.EndCommand])
+		parser.expect_symbol([TokenType.BeginCommand])
+		parser.expect_symbol([TokenType.IfToken])
+		prime.expression = ExpressionNode.parse_expressions(self, parser)
+		parser.expect_symbol([TokenType.EndCommand])
 
 		#read statements until 'endif' or 'else' or 'else if'
 		var statements: Array = []  #statement
 		while (
 			!parser.next_symbols_are(
-				[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.EndIf]
+				[TokenType.BeginCommand, TokenType.EndIf]
 			)
 			&& !parser.next_symbols_are(
-				[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.ElseToken]
+				[TokenType.BeginCommand, TokenType.ElseToken]
 			)
 			&& !parser.next_symbols_are(
-				[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.ElseIf]
+				[TokenType.BeginCommand, TokenType.ElseIf]
 			)
 		):
 			statements.append(Statement.new(self, parser))
 
 			#ignore dedent
-			while parser.next_symbol_is([YarnGlobals.TokenType.Dedent]):
-				parser.expect_symbol([YarnGlobals.TokenType.Dedent])
+			while parser.next_symbol_is([TokenType.Dedent]):
+				parser.expect_symbol([TokenType.Dedent])
 
 		prime.statements = statements
 		clauses.append(prime)
 
 		#handle all else if
 		while parser.next_symbols_are(
-			[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.ElseIf]
+			[TokenType.BeginCommand, TokenType.ElseIf]
 		):
 			var clauseElif: Clause = Clause.new()
 
 			#parse condition syntax
-			parser.expect_symbol([YarnGlobals.TokenType.BeginCommand])
-			parser.expect_symbol([YarnGlobals.TokenType.ElseIf])
-			clauseElif.expression = ExpressionNode.parse(self, parser)
-			parser.expect_symbol([YarnGlobals.TokenType.EndCommand])
+			parser.expect_symbol([TokenType.BeginCommand])
+			parser.expect_symbol([TokenType.ElseIf])
+			clauseElif.expression = ExpressionNode.parse_expressions(self, parser)
+			parser.expect_symbol([TokenType.EndCommand])
 
 			var elifStatements: Array = []  #statement
 			while (
 				!parser.next_symbols_are(
-					[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.EndIf]
+					[TokenType.BeginCommand, TokenType.EndIf]
 				)
 				&& !parser.next_symbols_are(
-					[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.ElseToken]
+					[TokenType.BeginCommand, TokenType.ElseToken]
 				)
 				&& !parser.next_symbols_are(
-					[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.ElseIf]
+					[TokenType.BeginCommand, TokenType.ElseIf]
 				)
 			):
 				elifStatements.append(Statement.new(self, parser))
 
 				#ignore dedent
-				while parser.next_symbol_is([YarnGlobals.TokenType.Dedent]):
-					parser.expect_symbol([YarnGlobals.TokenType.Dedent])
+				while parser.next_symbol_is([TokenType.Dedent]):
+					parser.expect_symbol([TokenType.Dedent])
 
 			clauseElif.statements = statements
 			clauses.append(clauseElif)
@@ -697,21 +728,21 @@ class IfStatement:
 		#handle else if exists
 		if parser.next_symbols_are(
 			[
-				YarnGlobals.TokenType.BeginCommand,
-				YarnGlobals.TokenType.ElseToken,
-				YarnGlobals.TokenType.EndCommand
+				TokenType.BeginCommand,
+				TokenType.ElseToken,
+				TokenType.EndCommand
 			]
 		):
 			#expect no expression - just <<else>>
-			parser.expect_symbol([YarnGlobals.TokenType.BeginCommand])
-			parser.expect_symbol([YarnGlobals.TokenType.ElseToken])
-			parser.expect_symbol([YarnGlobals.TokenType.EndCommand])
+			parser.expect_symbol([TokenType.BeginCommand])
+			parser.expect_symbol([TokenType.ElseToken])
+			parser.expect_symbol([TokenType.EndCommand])
 
 			#parse until hit endif
 			var clauseElse: Clause = Clause.new()
 			var elStatements: Array = []  #statement
 			while !parser.next_symbols_are(
-				[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.EndIf]
+				[TokenType.BeginCommand, TokenType.EndIf]
 			):
 				elStatements.append(Statement.new(self, parser))
 
@@ -719,13 +750,13 @@ class IfStatement:
 			clauses.append(clauseElse)
 
 			#ignore dedent
-			while parser.next_symbol_is([YarnGlobals.TokenType.Dedent]):
-				parser.expect_symbol([YarnGlobals.TokenType.Dedent])
+			while parser.next_symbol_is([TokenType.Dedent]):
+				parser.expect_symbol([TokenType.Dedent])
 
 		#finish
-		parser.expect_symbol([YarnGlobals.TokenType.BeginCommand])
-		parser.expect_symbol([YarnGlobals.TokenType.EndIf])
-		parser.expect_symbol([YarnGlobals.TokenType.EndCommand])
+		parser.expect_symbol([TokenType.BeginCommand])
+		parser.expect_symbol([TokenType.EndIf])
+		parser.expect_symbol([TokenType.EndCommand])
 
 	func tree_string(indentLevel: int) -> String:
 		var info: PackedStringArray = []
@@ -745,7 +776,7 @@ class IfStatement:
 
 	static func can_parse(parser) -> bool:
 		return parser.next_symbols_are(
-			[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.IfToken]
+			[TokenType.BeginCommand, TokenType.IfToken]
 		)
 
 	pass
@@ -757,42 +788,42 @@ class ValueNode:
 	const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
 	var value: Value
 
-	func _init(parent: ParseNode, parser, token: Lexer.Token = null):
+	func _init(parent: ParseNode, parser, token: Token = null):
 		super(parent, parser)
-		var t: Lexer.Token = token
+		var t: Token = token
 		if t == null:
 			parser.expect_symbol(
 				[
-					YarnGlobals.TokenType.Number,
-					YarnGlobals.TokenType.Variable,
-					YarnGlobals.TokenType.Str
+					TokenType.Number,
+					TokenType.Variable,
+					TokenType.Str
 				]
 			)
 
 		use_token(t, parser)
 
 	#store value depedning on type
-	func use_token(t: Lexer.Token, parser):
+	func use_token(t: Token, parser):
 		match t.type:
-			YarnGlobals.TokenType.Number:
+			TokenType.Number:
 				value = Value.new(float(t.value))
-			YarnGlobals.TokenType.Str:
+			TokenType.Str:
 				value = Value.new(t.value)
-			YarnGlobals.TokenType.FalseToken:
+			TokenType.FalseToken:
 				value = Value.new(false)
-			YarnGlobals.TokenType.TrueToken:
+			TokenType.TrueToken:
 				value = Value.new(true)
-			YarnGlobals.TokenType.Variable:
+			TokenType.Variable:
 				value = Value.new(null)
 				value.type = YarnGlobals.ValueType.Variable
 				value.variable = t.value
-			YarnGlobals.TokenType.NullToken:
+			TokenType.NullToken:
 				value = Value.new(null)
 			_:
 				printerr(
 					(
 						"%s, Invalid token type @[l%4d:c%4d]"
-						% [YarnGlobals.get_script().token_type_name(t.type), t.lineNumber, t.column]
+						% [YarnGlobals.token_name(t.type), t.line_number, t.column]
 					)
 				)
 				parser.error = ERR_INVALID_DATA
@@ -800,7 +831,7 @@ class ValueNode:
 	func tree_string(indentLevel: int, newline: bool = true) -> String:
 		return tab(
 			indentLevel,
-			"<%s>%s" % [YarnGlobals.get_script().get_value_type_name(value.type), value.value()],
+			"<%s>%s" % [YarnGlobals.get_value_type_name(value.type), value.value()],
 			newline
 		)
 
@@ -819,7 +850,8 @@ class ExpressionNode:
 
 	func _init(
 		parent: ParseNode, parser, value: ValueNode, function: String = "", params: Array = []
-	).(parent, parser):
+	):
+		super(parent, parser)
 		#no function - means value
 		if value != null:
 			self.type = YarnGlobals.ExpressionType.Value
@@ -846,27 +878,27 @@ class ExpressionNode:
 	#using Djikstra's shunting-yard algorithm to convert
 	#stream of expresions into postfix notaion, then
 	#build a tree of expressions
-	static func parse(parent: ParseNode, parser) -> ExpressionNode:
-		var rpn: Array = []  #token
-		var opStack: Array = []  #token
+	static func parse_expressions(parent: ParseNode, parser) -> ExpressionNode:
+		var rpn: Array[TokenType] = []  #token
+		var opStack: Array[TokenType] = []  #token
 
 		#track params
 		var funcStack: Array = []  #token
 
 		var validTypes: Array = [
-			YarnGlobals.TokenType.Number,
-			YarnGlobals.TokenType.Variable,
-			YarnGlobals.TokenType.Str,
-			YarnGlobals.TokenType.LeftParen,
-			YarnGlobals.TokenType.RightParen,
-			YarnGlobals.TokenType.Identifier,
-			YarnGlobals.TokenType.Comma,
-			YarnGlobals.TokenType.TrueToken,
-			YarnGlobals.TokenType.FalseToken,
-			YarnGlobals.TokenType.NullToken
+			TokenType.Number,
+			TokenType.Variable,
+			TokenType.Str,
+			TokenType.LeftParen,
+			TokenType.RightParen,
+			TokenType.Identifier,
+			TokenType.Comma,
+			TokenType.TrueToken,
+			TokenType.FalseToken,
+			TokenType.NullToken
 		]
 		validTypes += Operator.op_types()
-		validTypes.invert()
+		validTypes.reverse()
 
 		var last  #Token
 
@@ -875,25 +907,25 @@ class ExpressionNode:
 			var next = parser.expect_symbol(validTypes)  #lexer.Token
 
 			if (
-				next.type == YarnGlobals.TokenType.Variable
-				|| next.type == YarnGlobals.TokenType.Number
-				|| next.type == YarnGlobals.TokenType.Str
-				|| next.type == YarnGlobals.TokenType.TrueToken
-				|| next.type == YarnGlobals.TokenType.FalseToken
-				|| next.type == YarnGlobals.TokenType.NullToken
+				next.type == TokenType.Variable
+				|| next.type == TokenType.Number
+				|| next.type == TokenType.Str
+				|| next.type == TokenType.TrueToken
+				|| next.type == TokenType.FalseToken
+				|| next.type == TokenType.NullToken
 			):
 				#output primitives
 				rpn.append(next)
-			elif next.type == YarnGlobals.TokenType.Identifier:
+			elif next.type == TokenType.Identifier:
 				opStack.push_back(next)
 				funcStack.push_back(next)
 
 				#next token is parent - left
-				next = parser.expect_symbol([YarnGlobals.TokenType.LeftParen])
+				next = parser.expect_symbol([TokenType.LeftParen])
 				opStack.push_back(next)
-			elif next.type == YarnGlobals.TokenType.Comma:
+			elif next.type == TokenType.Comma:
 				#resolve sub expression before moving on
-				while opStack.back().type != YarnGlobals.TokenType.LeftParen:
+				while opStack.back().type != TokenType.LeftParen:
 					var p = opStack.pop_back()
 					if p == null:
 						printerr("unbalanced parenthesis %s " % next.name)
@@ -905,7 +937,7 @@ class ExpressionNode:
 				#next token in opStack left paren
 				# next parser token not allowed to be right paren or comma
 				if parser.next_symbol_is(
-					[YarnGlobals.TokenType.RightParen, YarnGlobals.TokenType.Comma]
+					[TokenType.RightParen, TokenType.Comma]
 				):
 					printerr("Expected Expression : %s" % parser.tokens().front().name)
 					parser.error = ERR_INVALID_DATA
@@ -927,19 +959,19 @@ class ExpressionNode:
 				#is only unary when the last token was a left paren,
 				#an operator, or its the first token.
 
-				if next.type == YarnGlobals.TokenType.Minus:
+				if next.type == TokenType.Minus:
 					if (
 						last == null
-						|| last.type == YarnGlobals.TokenType.LeftParen
+						|| last.type == TokenType.LeftParen
 						|| Operator.is_op(last.type)
 					):
 						#unary minus
-						next.type = YarnGlobals.TokenType.UnaryMinus
+						next.type = TokenType.UnaryMinus
 
 				#cannot assign inside expression
 				# x = a is the same as x == a
-				if next.type == YarnGlobals.TokenType.EqualToOrAssign:
-					next.type = YarnGlobals.TokenType.EqualTo
+				if next.type == TokenType.EqualToOrAssign:
+					next.type = TokenType.EqualTo
 
 				#operator precedence
 				while ExpressionNode.is_apply_precedence(next.type, opStack):
@@ -948,14 +980,14 @@ class ExpressionNode:
 
 				opStack.push_back(next)
 
-			elif next.type == YarnGlobals.TokenType.LeftParen:
+			elif next.type == TokenType.LeftParen:
 				#entered parenthesis sub expression
 				opStack.push_back(next)
 
-			elif next.type == YarnGlobals.TokenType.RightParen:
+			elif next.type == TokenType.RightParen:
 				#leaving sub expression
 				# resolve order of operations
-				while opStack.back().type != YarnGlobals.TokenType.LeftParen:
+				while opStack.back().type != TokenType.LeftParen:
 					rpn.append(opStack.pop_back())
 					if opStack.back() == null:
 						printerr("Unbalanced parenthasis #RightParen. Parser.ExpressionNode")
@@ -963,12 +995,12 @@ class ExpressionNode:
 						return null
 
 				opStack.pop_back()  # pop left parenthesis
-				if !opStack.is_empty() && opStack.back().type == YarnGlobals.TokenType.Identifier:
+				if !opStack.is_empty() && opStack.back().type == TokenType.Identifier:
 					#function call
 					#last token == left paren this == no params
 					#else
 					#we have more than 1 param
-					if last.type != YarnGlobals.TokenType.LeftParen:
+					if last.type != TokenType.LeftParen:
 						funcStack.back().paramCount += 1
 
 					rpn.append(opStack.pop_back())
@@ -987,7 +1019,7 @@ class ExpressionNode:
 
 		#build expression tree
 		var first = rpn.front()
-		var evalStack: Array = []  #ExpressionNode
+		var eval_stack: Array[ExpressionNode] = []  #ExpressionNode
 
 		while rpn.size() > 0:
 			var next = rpn.pop_front()
@@ -995,23 +1027,23 @@ class ExpressionNode:
 				#operation
 				var info: OperatorInfo = Operator.op_info(next.type)
 
-				if evalStack.size() < info.arguments:
+				if eval_stack.size() < info.arguments:
 					printerr(
 						(
 							"Error parsing : Not enough arguments for %s [ got %s expected - was %s]"
 							% [
-								YarnGlobals.get_script().token_type_name(next.type),
-								evalStack.size(),
+								YarnGlobals.token_name(next.type),
+								eval_stack.size(),
 								info.arguments
 							]
 						)
 					)
 
-				var params: Array = []  #ExpressionNode
+				var params: Array[ExpressionNode] = []  #ExpressionNode
 				for i in range(info.arguments):
-					params.append(evalStack.pop_back())
+					params.append(eval_stack.pop_back())
 
-				params.invert()
+				params.reverse()
 
 				var function: String = get_func_name(next.type)
 
@@ -1019,40 +1051,40 @@ class ExpressionNode:
 					parent, parser, null, function, params
 				)
 
-				evalStack.append(expression)
+				eval_stack.append(expression)
 
-			elif next.type == YarnGlobals.TokenType.Identifier:
+			elif next.type == TokenType.Identifier:
 				#function call
 
 				var function: String = next.value
 
 				var params: Array = []  #ExpressionNode
 				for i in range(next.paramCount):
-					params.append(evalStack.pop_back())
+					params.append(eval_stack.pop_back())
 
-				params.invert()
+				params.reverse()
 
 				var expression: ExpressionNode = ExpressionNode.new(
 					parent, parser, null, function, params
 				)
 
-				evalStack.append(expression)
+				eval_stack.append(expression)
 			else:  #raw value
 				var value: ValueNode = ValueNode.new(parent, parser, next)
 				var expression: ExpressionNode = ExpressionNode.new(parent, parser, value)
-				evalStack.append(expression)
+				eval_stack.append(expression)
 
 		#we should have a single root expression left
 		#if more then we failed ---- NANI
-		if evalStack.size() != 1:
+		if eval_stack.size() != 1:
 			printerr(
 				(
 					"Error parsing expression (stack did not reduce correctly ) @[l%4d,c%4d]"
-					% [first.lineNumber, first.column]
+					% [first.line_number, first.column]
 				)
 			)
 
-		return evalStack.pop_back()
+		return eval_stack.pop_back()
 
 	# static func can_parse(parser)->bool:
 	# 	return false
@@ -1060,8 +1092,8 @@ class ExpressionNode:
 	static func get_func_name(type) -> String:
 		var string: String = ""
 
-		for key in YarnGlobals.TokenType.keys():
-			if YarnGlobals.TokenType[key] == type:
+		for key in TokenType.keys():
+			if TokenType[key] == type:
 				return key
 		return string
 
@@ -1070,7 +1102,7 @@ class ExpressionNode:
 			return false
 
 		if !Operator.is_op(type):
-			printerr("Unable to parse expression!")
+			printerr("Unable to parse_expressions expression!")
 			return false
 
 		var second = operatorStack.back().type
@@ -1105,33 +1137,33 @@ class Assignment:
 
 	func _init(parent: ParseNode, parser):
 		super(parent, parser)
-		parser.expect_symbol([YarnGlobals.TokenType.BeginCommand])
-		parser.expect_symbol([YarnGlobals.TokenType.Set])
-		destination = parser.expect_symbol([YarnGlobals.TokenType.Variable]).value
+		parser.expect_symbol([TokenType.BeginCommand])
+		parser.expect_symbol([TokenType.Set])
+		destination = parser.expect_symbol([TokenType.Variable]).value
 		operation = parser.expect_symbol(Assignment.valid_ops()).type
-		value = ExpressionNode.parse(self, parser)
-		parser.expect_symbol([YarnGlobals.TokenType.EndCommand])
+		value = ExpressionNode.parse_expressions(self, parser)
+		parser.expect_symbol([TokenType.EndCommand])
 
 	func tree_string(indentLevel: int) -> String:
 		var info: PackedStringArray = []
 		info.append(tab(indentLevel, "set:"))
 		info.append(tab(indentLevel + 1, destination))
-		info.append(tab(indentLevel + 1, YarnGlobals.get_script().token_type_name(operation)))
+		info.append(tab(indentLevel + 1, YarnGlobals.token_name(operation)))
 		info.append(value.tree_string(indentLevel + 1))
 		return "".join(info)
 
 	static func can_parse(parser) -> bool:
 		return parser.next_symbols_are(
-			[YarnGlobals.TokenType.BeginCommand, YarnGlobals.TokenType.Set]
+			[TokenType.BeginCommand, TokenType.Set]
 		)
 
 	static func valid_ops() -> Array:
 		return [
-			YarnGlobals.TokenType.EqualToOrAssign,
-			YarnGlobals.TokenType.AddAssign,
-			YarnGlobals.TokenType.MinusAssign,
-			YarnGlobals.TokenType.DivideAssign,
-			YarnGlobals.TokenType.MultiplyAssign
+			TokenType.EqualToOrAssign,
+			TokenType.AddAssign,
+			TokenType.MinusAssign,
+			TokenType.DivideAssign,
+			TokenType.MultiplyAssign
 		]
 
 
@@ -1159,7 +1191,7 @@ class Operator:
 
 		#determine associativity and operands
 		# each operand has
-		var TokenType = YarnGlobals.TokenType
+		var TokenType = TokenType
 
 		match op:
 			TokenType.Not, TokenType.UnaryMinus:
@@ -1188,23 +1220,23 @@ class Operator:
 
 	static func op_types() -> Array:
 		return [
-			YarnGlobals.TokenType.Not,
-			YarnGlobals.TokenType.UnaryMinus,
-			YarnGlobals.TokenType.Add,
-			YarnGlobals.TokenType.Minus,
-			YarnGlobals.TokenType.Divide,
-			YarnGlobals.TokenType.Multiply,
-			YarnGlobals.TokenType.Modulo,
-			YarnGlobals.TokenType.EqualToOrAssign,
-			YarnGlobals.TokenType.EqualTo,
-			YarnGlobals.TokenType.GreaterThan,
-			YarnGlobals.TokenType.GreaterThanOrEqualTo,
-			YarnGlobals.TokenType.LessThan,
-			YarnGlobals.TokenType.LessThanOrEqualTo,
-			YarnGlobals.TokenType.NotEqualTo,
-			YarnGlobals.TokenType.And,
-			YarnGlobals.TokenType.Or,
-			YarnGlobals.TokenType.Xor
+			TokenType.Not,
+			TokenType.UnaryMinus,
+			TokenType.Add,
+			TokenType.Minus,
+			TokenType.Divide,
+			TokenType.Multiply,
+			TokenType.Modulo,
+			TokenType.EqualToOrAssign,
+			TokenType.EqualTo,
+			TokenType.GreaterThan,
+			TokenType.GreaterThanOrEqualTo,
+			TokenType.LessThan,
+			TokenType.LessThanOrEqualTo,
+			TokenType.NotEqualTo,
+			TokenType.And,
+			TokenType.Or,
+			TokenType.Xor
 		]
 
 

@@ -19,7 +19,7 @@
  "junit_xml_timestamp": false,
  "log_level": 3,
  "opacity": 100,
- "paint_after": 0.1,
+ "paint_after": 0.05,
  "panel_options": {
   "font_name": "CourierPrime",
   "font_size": 30,

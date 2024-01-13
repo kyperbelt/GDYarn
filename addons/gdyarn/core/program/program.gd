@@ -1,8 +1,10 @@
+class_name YarnProgram
 extends Resource
 
-var programName: String
-var yarnStrings: Dictionary = {}
-var yarnNodes: Dictionary = {}
+
+var program_name: String
+var yarn_strings: Dictionary = {}
+var yarn_nodes: Dictionary = {}
 
 # an array of line Info data that gets exported to file
 # stripped of the text information that is saved to another file
@@ -10,26 +12,26 @@ var _lineInfos: Array = []
 
 
 func _init():
-	yarnNodes = {}
-	yarnStrings = {}
-	programName = ""
+	yarn_nodes = {}
+	yarn_strings = {}
+	program_name = ""
 
 
 func get_node_tags(name: String) -> Array:
-	return yarnNodes[name].tags
+	return yarn_nodes[name].tags
 
 
 func get_yarn_string(key: String) -> String:
-	return yarnStrings[key]
+	return yarn_strings[key]
 
 
 func get_node_text(name: String) -> String:
-	var key = yarnNodes[name].sourceId
+	var key = yarn_nodes[name].sourceId
 	return get_yarn_string(key)
 
 
 func has_yarn_node(name: String) -> bool:
-	return yarnNodes.has(name)
+	return yarn_nodes.has(name)
 
 
 #possible support for line tags

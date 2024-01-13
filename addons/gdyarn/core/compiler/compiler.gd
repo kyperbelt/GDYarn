@@ -1,8 +1,8 @@
+class_name YarnCompiler
 # const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
 
-const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
+# const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
 const LineInfo = preload("res://addons/gdyarn/core/program/yarn_line.gd")
-const YarnNode = preload("res://addons/gdyarn/core/program/yarn_node.gd")
 const Instruction = preload("res://addons/gdyarn/core/program/instruction.gd")
 const YarnProgram = preload("res://addons/gdyarn/core/program/program.gd")
 const Operand = preload("res://addons/gdyarn/core/program/operand.gd")
@@ -21,19 +21,19 @@ const ERR_COMPILATION_FAILED: int = 0x10
 var error = OK
 
 var _errors: int
-var _lastError: int
+var _last_error: int
 
 #-----Class vars
-var _currentNode: YarnNode
-var _rawText: bool
+var _current_node: CompiledYarnNode
+var _raw_text: bool
 var _program: YarnProgram
-var _fileName: String
-var _containsImplicitStringTags: bool
-var _labelCount: int = 0
+var _filename: String
+var _contains_implicit_string_tags: bool
+var _label_count: int = 0
 
 #<String, LineInfo>
-var _stringTable: Dictionary = {}
-var _stringCount: int = 0
+var _string_table: Dictionary = {}
+var _string_count: int = 0
 
 #<int, YarnGlobals.TokenType>
 var _tokens: Dictionary = {}
@@ -43,106 +43,65 @@ static func compile_string(
 	source: String,
 	filename,
 	program: YarnProgram,
-	showTokens: bool = false,
-	printTree: bool = false
+	show_tokens: bool = false,
+	print_tree: bool = false
 ) -> int:
-	var Parser = load("res://addons/gdyarn/core/compiler/parser.gd")
 	var Compiler = load("res://addons/gdyarn/core/compiler/compiler.gd")
 
 	var compiler = Compiler.new()
-	compiler._fileName = filename
+	compiler._filename = filename
 
-	#--------------Nodes
-	var headerSep: RegEx = RegEx.new()
-	headerSep.compile("---(\r\n|\r|\n)")
-	var headerProperty: RegEx = RegEx.new()
-	headerProperty.compile("(?<field>.*): *(?<value>.*)")
+	var source_lines: Array = source.split("\n", true)
 
-	#check for atleast one node start
-	if !headerSep.search(source):
-		printerr("Error parsing yarn input : No headers found")
-		return ERR_FILE_UNRECOGNIZED
+	# we want to sanatize the strings by removing any trailing whitespace on the 
+	# end of each line while preserving the indentation on the left side
+	for i in range(source_lines.size()):
+		source_lines[i] = source_lines[i].strip_edges(false, true)
+		print("%d-%s" % [i+1, source_lines[i]])
 
-	var lineNumber: int = 0
+	# once we have removed the trailing whitespace we can join the lines back together
+	var prepared_source_code := '\n'.join(source_lines)
 
-	var sourceLines: Array = source.split("\n", true)
-	# printerr("source lines %s" % sourceLines.size())
-	for i in range(sourceLines.size()):
-		sourceLines[i] = sourceLines[i].strip_edges(false, true)
+	#---Begin lexing---
+	var lexer := YarnLexer.new()
+	var tokens := lexer.tokenize(prepared_source_code, 1)
 
-	var parsedNodes: Array = []
+	if lexer.error != OK:
+		printerr("Failed to lex file: %s." % filename)
+		return lexer.error
 
-	# print("sourceLines:")
-	# for line in sourceLines:
-	# 	print(line)
+	if show_tokens:
+		print_tokens(filename, tokens)
 
-	while lineNumber < sourceLines.size():
-		var title: String
-		var body: String
+	#---Begin parsing---
+	var parser := YarnParser.new(tokens)
+	var parsed_nodes: Array[YarnParser.YarnNode] = parser.parse_nodes()
 
-		#get title
-		while true:
-			var line: String = sourceLines[lineNumber]
-			# print(sourceLines[lineNumber])
-			lineNumber += 1
+	if (parser.error != OK):
+		printerr("Failed to parse file: %s." % filename)
+		return parser.error
 
-			if !line.is_empty():
-				var result = headerProperty.search(line)
-				if result != null:
-					var field: String = result.get_string("field")
-					var value: String = result.get_string("value")
+	if print_tree:
+		print("Parsed nodes:")
+		for i in range(parsed_nodes.size()):
+			var node : YarnParser.YarnNode = parsed_nodes[i] 
+			print(node.tree_string(0))
+			print("====================================")
+			
 
-					if field == "title":
-						title = value
 
-			if lineNumber >= sourceLines.size() || sourceLines[lineNumber] == "---":
-				break
-
-		lineNumber += 1
-		#past header
-		var bodyLines: PackedStringArray = []
-
-		while lineNumber < sourceLines.size() && sourceLines[lineNumber] != "===":
-			bodyLines.append(sourceLines[lineNumber])
-			lineNumber += 1
-
-		lineNumber += 1
-
-		body = "\n".join(bodyLines)
-		var lexer = Lexer.new()
-
-		var tokens: Array = lexer.tokenize(body, 0)
-		if lexer.error != OK:
-			printerr("Failed to tokenize the Node[%s] in file: %s." % [title, filename])
-			return lexer.error
-
-		if showTokens:
-			print_tokens(title, tokens)
-		var parser = Parser.new(tokens)
-
-		var parserNode = parser.parse_node(title)
-		if parser.error != OK:
-			printerr("Failed to parse Node[%s] in file: %s." % [title, filename])
-			return parser.error
-
-		if printTree:
-			print(parserNode.tree_string(0))
-
-		parsedNodes.append(parserNode)
-		while lineNumber < sourceLines.size() && sourceLines[lineNumber].is_empty():
-			lineNumber += 1
-
-	#--- End parsing nodes---
-
-	#compile nodes
-	for node in parsedNodes:
+	#---Begin compiling---
+	# compile nodes
+	for node in parsed_nodes:
 		compiler.compile_node(program, node)
 		if compiler.error != OK:
 			printerr("Failed to compile Node[%s] in file: %s." % [node.name, filename])
 			return compiler.error
 
-	merge_dir(program.yarnStrings, compiler._stringTable)
+	# merge all the yarn strings gathered by thhe compilation into the program string table
+	merge_dir(program.yarn_strings, compiler._string_table)
 
+	print("finished compiling %s" % filename)
 	return OK
 
 
@@ -151,28 +110,29 @@ static func merge_dir(target, patch):
 		target[key] = patch[key]
 
 
-func compile_node(program: YarnProgram, parsedNode) -> void:
-	if program.yarnNodes.has(parsedNode.name):
+func compile_node(program: YarnProgram, parsed_node) -> void:
+	if program.yarn_nodes.has(parsed_node.name):
 		# emit_error(DUPLICATE_NODES_IN_PROGRAM)
 		error = ERR_ALREADY_EXISTS
-		printerr("Duplicate node in program: %s" % parsedNode.name)
+		printerr("Duplicate node in program: %s" % parsed_node.name)
 	else:
-		var nodeCompiled: YarnNode = YarnNode.new()
+		var nodeCompiled: CompiledYarnNode = CompiledYarnNode.new()
 
-		nodeCompiled.nodeName = parsedNode.name
-		nodeCompiled.tags = parsedNode.tags
+		nodeCompiled.node_name = parsed_node.name
+		nodeCompiled.tags = parsed_node.tags
+
 
 		#raw text
-		if parsedNode.source != null && !parsedNode.source.is_empty():
-			nodeCompiled.sourceId = register_string(
-				parsedNode.source, parsedNode.name, "line:" + parsedNode.name, 0, []
+		if parsed_node.source != null && !parsed_node.source.is_empty():
+			nodeCompiled.source_id = register_string(
+				parsed_node.source, parsed_node.name, "line:" + parsed_node.name, 0, []
 			)
 		else:
 			#compile node
 			var startLabel: String = register_label()
 			emit(YarnGlobals.ByteCode.Label, nodeCompiled, [Operand.new(startLabel)])
 
-			for statement in parsedNode.statements:
+			for statement in parsed_node.statements:
 				generate_statement(nodeCompiled, statement)
 
 			#add options
@@ -187,7 +147,7 @@ func compile_node(program: YarnProgram, parsedNode) -> void:
 			# 		hasOptions = false
 
 			#if no lingering options we stop
-			if !parsedNode.hasOptions:
+			if !parsed_node.hasOptions:
 				# printerr("no options found")
 				emit(YarnGlobals.ByteCode.Stop, nodeCompiled)
 			else:
@@ -196,53 +156,53 @@ func compile_node(program: YarnProgram, parsedNode) -> void:
 				emit(YarnGlobals.ByteCode.ShowOptions, nodeCompiled)
 				emit(YarnGlobals.ByteCode.RunNode, nodeCompiled)
 
-		program.yarnNodes[nodeCompiled.nodeName] = nodeCompiled
+		program.yarn_nodes[nodeCompiled.node_name] = nodeCompiled
 
 
 func register_string(
 	text: String,
-	nodeName: String,
+	node_name: String,
 	id: String = "",
-	lineNumber: int = -1,
+	line_number: int = -1,
 	tags: PackedStringArray = []
 ) -> String:
-	var lineIdUsed: String
+	var line_id_used: String
 
 	var implicit: bool
 
 	if id.is_empty():
-		lineIdUsed = "%s-%s-%d" % [self._fileName.get_file(), nodeName, self._stringCount]
-		self._stringCount += 1
+		line_id_used = "%s-%s-%d" % [self._filename.get_file(), node_name, self._string_count]
+		self._string_count += 1
 
 		#use this when we generate implicit tags
 		#they are not saved and are generated
 		#aka dummy tags that change on each compilation
-		_containsImplicitStringTags = true
+		_contains_implicit_string_tags = true
 
 		implicit = true
 	else:
-		lineIdUsed = id
+		line_id_used = id
 		implicit = false
 
 	var stringInfo: LineInfo = LineInfo.new(
-		text, nodeName, lineNumber, _fileName.get_file(), implicit, tags
+		text, node_name, line_number, _filename.get_file(), implicit, tags
 	)
 	#add to string table and return id
-	self._stringTable[lineIdUsed] = stringInfo
+	self._string_table[line_id_used] = stringInfo
 
-	return lineIdUsed
+	return line_id_used
 
 
 func register_label(comment: String = "") -> String:
-	_labelCount += 1
-	return "L%s%s" % [_labelCount, comment]
+	_label_count += 1
+	return "L%s%s" % [_label_count, comment]
 
 
-func emit(bytecode, node: YarnNode = _currentNode, operands: Array = []):
+func emit(bytecode, node :CompiledYarnNode= _current_node, operands: Array = []):
 	var instruction: Instruction = Instruction.new(null)
 	instruction.operation = bytecode
 	instruction.operands = operands
-	# print("emitting instruction to %s"%node.nodeName)
+	# print("emitting instruction to %s"%node.node_name)
 
 	if node == null:
 		printerr("trying to emit to null node with byteCode: %s" % bytecode)
@@ -316,7 +276,7 @@ func generate_line(node, statement, line):
 		generate_expression(node, inlineExpression.expression)
 
 	var num: String = register_string(
-		line.line_text, node.nodeName, line.lineid, statement.lineNumber, line.tags
+		line.line_text, node.node_name, line.lineid, statement.line_number, line.tags
 	)
 	emit(YarnGlobals.ByteCode.RunLine, node, [Operand.new(num), Operand.new(expressionCount)])
 
@@ -347,7 +307,7 @@ func generate_shortcut_group(node, shortcutGroup):
 			generate_expression(node, inlineExpression.expression)
 		var labelLineId: String = option.line.lineid
 		var labelStringId: String = register_string(
-			option.line.line_text, node.nodeName, labelLineId, option.lineNumber, node.tags
+			option.line.line_text, node.node_name, labelLineId, option.line_number, node.tags
 		)
 
 		emit(
@@ -426,7 +386,7 @@ func generate_option(node, option):
 	else:
 		var lineID: String = option.line.lineid
 		var stringID = register_string(
-			option.line.line_text, node.nodeName, lineID, option.lineNumber, option.line.tags
+			option.line.line_text, node.node_name, lineID, option.lineNumber, option.line.tags
 		)
 
 		var expressionCount = option.line.substitutions.size()
@@ -529,7 +489,7 @@ func generate_value(node, value):
 			emit(YarnGlobals.ByteCode.PushNumber, node, [Operand.new(value.value.as_number())])
 		YarnGlobals.ValueType.Str:
 			var id: String = register_string(
-				value.value.as_string(), node.nodeName, "", value.lineNumber, []
+				value.value.as_string(), node.node_name, "", value.lineNumber, []
 			)
 			emit(YarnGlobals.ByteCode.PushString, node, [Operand.new(id)])
 		YarnGlobals.ValueType.Boolean:
@@ -550,32 +510,32 @@ func get_errors() -> int:
 
 #get the last error code reported
 func get_last_error() -> int:
-	return _lastError
+	return _last_error
 
 
 func clear_errors() -> void:
 	_errors = NO_ERROR
-	_lastError = NO_ERROR
+	_last_error = NO_ERROR
 
 
 # func emit_error(error : int)->void:
-# 	_lastError = error
-# 	_errors |= _lastError
+# 	_last_error = error
+# 	_errors |= _last_error
 
 
-static func print_tokens(nodeName: String, tokens: Array = []):
+static func print_tokens(node_name: String, tokens: Array = []):
 	var list: PackedStringArray = []
 	for token in tokens:
 		list.append(
 			(
 				"\t [%14s] %s (%s line %s)\n"
 				% [
-					token.lexerState,
-					YarnGlobals.token_type_name(token.type),
+					token.lexer_state,
+					YarnGlobals.token_name(token.type),
 					token.value,
-					token.lineNumber
+					token.line_number
 				]
 			)
 		)
-	print("Node[%s] Tokens:" % nodeName)
+	print("Node[%s] Tokens:" % node_name)
 	print("".join(list))

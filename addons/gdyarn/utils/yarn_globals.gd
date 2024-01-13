@@ -168,11 +168,11 @@ func defaultValue(type):
 	pass
 
 
-static func token_type_name(value: int) -> String:
-	for key in TokenType.keys():
-		if TokenType[key] == value:
-			return key
-	return "NOTVALID"
+# static func token_type_name(value: int) -> String:
+# 	for key in TokenType.keys():
+# 		if TokenType[key] == value:
+# 			return key
+# 	return "NOTVALID"
 
 
 static func merge_dir(target, patch):

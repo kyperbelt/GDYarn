@@ -1,20 +1,21 @@
+class_name CompiledYarnNode
 extends Object
 
-var nodeName: String
-var instructions: Array = []
+var node_name: String
+var instructions: Array[YarnInstruction] = []
 var labels: Dictionary
-var tags: Array
-var sourceId: String
+var tags: Array[String]
+var source_id: String
 
 
 func _init(other = null):
 	if other != null && other.get_script() == self.get_script():
-		nodeName = other.nodeName
+		node_name = other.node_name
 		instructions += other.instructions
 		for key in other.labels.keys():
 			labels[key] = other.labels[key]
 		tags += other.tags
-		sourceId = other.sourceId
+		source_id = other.source_id
 
 
 func equals(other) -> bool:
@@ -26,10 +27,10 @@ func equals(other) -> bool:
 		return false
 	if other.label != self.label:
 		return false
-	if other.sourceId != self.sourceId:
+	if other.source_id != self.source_id:
 		return false
 	return true
 
 
 func _to_string():
-	return "Node[%s:%s]" % [nodeName, sourceId]
+	return "Node[%s:%s]" % [node_name, source_id]

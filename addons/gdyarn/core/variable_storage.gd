@@ -1,3 +1,4 @@
+@icon("res://addons/gdyarn/assets/storage.png")
 class_name VariableStorage
 extends Node
 
