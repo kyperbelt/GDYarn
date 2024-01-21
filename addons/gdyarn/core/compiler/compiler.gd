@@ -1,5 +1,7 @@
 class_name YarnCompiler
 # const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
+const Result := ErrorUtils.Result
+const ResultError := ErrorUtils.ResultError
 
 # const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
 const LineInfo = preload("res://addons/gdyarn/core/program/yarn_line.gd")
@@ -101,7 +103,6 @@ static func compile_string(
 	# merge all the yarn strings gathered by thhe compilation into the program string table
 	merge_dir(program.yarn_strings, compiler._string_table)
 
-	print("finished compiling %s" % filename)
 	return OK
 
 
@@ -238,15 +239,17 @@ func generate_statement(node, statement):
 			generate_block(node, statement.block.statements)
 		YarnGlobals.StatementTypes.IfStatement:
 			generate_if(node, statement.ifStatement)
-		YarnGlobals.StatementTypes.OptionStatement:
-			generate_option(node, statement.optionStatement)
+		YarnGlobals.StatementTypes.JumpStatement:
+			generate_jump(node, statement.jumpStatement)
 		YarnGlobals.StatementTypes.AssignmentStatement:
 			generate_assignment(node, statement.assignment)
 		YarnGlobals.StatementTypes.Line:
 			generate_line(node, statement, statement.line)
+		YarnGlobals.StatementTypes.DeclarationStatement:
+			pass
 		_:
 			error = ERR_COMPILATION_FAILED
-			printerr("illegal statement type [%s]- could not generate code" % statement.type)
+			printerr("illegal statement type [%s]- could not generate code" % YarnGlobals.get_statement_type_name(statement.type))
 
 	pass
 
@@ -376,30 +379,30 @@ func generate_if(node, ifStatement):
 
 
 #compile instructions for options
-func generate_option(node, option):
+func generate_jump(node, option):
 	# print("generating option")
 	var destination: String = option.destination
 
-	if !option.line:
-		#jump to another node
-		emit(YarnGlobals.ByteCode.RunNode, node, [Operand.new(destination)])
-	else:
-		var lineID: String = option.line.lineid
-		var stringID = register_string(
-			option.line.line_text, node.node_name, lineID, option.lineNumber, option.line.tags
-		)
-
-		var expressionCount = option.line.substitutions.size()
-
-		while !option.line.substitutions.is_empty():
-			var inLineExpression = option.line.substitutions.pop_back()
-			generate_expression(node, inLineExpression.expression)
-
-		emit(
-			YarnGlobals.ByteCode.AddOption,
-			node,
-			[Operand.new(stringID), Operand.new(destination), Operand.new(expressionCount)]
-		)
+	emit(YarnGlobals.ByteCode.RunNode, node, [Operand.new(destination)])
+	# if !option.line:
+	# 	#jump to another node
+	# else:
+	# 	var lineID: String = option.line.lineid
+	# 	var stringID = register_string(
+	# 		option.line.line_text, node.node_name, lineID, option.lineNumber, option.line.tags
+	# 	)
+	#
+	# 	var expressionCount = option.line.substitutions.size()
+	#
+	# 	while !option.line.substitutions.is_empty():
+	# 		var inLineExpression = option.line.substitutions.pop_back()
+	# 		generate_expression(node, inLineExpression.expression)
+	#
+	# 	emit(
+	# 		YarnGlobals.ByteCode.AddOption,
+	# 		node,
+	# 		[Operand.new(stringID), Operand.new(destination), Operand.new(expressionCount)]
+	# 	)
 
 
 #compile instructions for assigning values
@@ -528,12 +531,13 @@ static func print_tokens(node_name: String, tokens: Array = []):
 	for token in tokens:
 		list.append(
 			(
-				"\t [%14s] %s (%s line %s)\n"
+				"\t [%14s] %s (%s l:%s c:%s)\n"
 				% [
 					token.lexer_state,
 					YarnGlobals.token_name(token.type),
 					token.value,
-					token.line_number
+					token.line_number, 
+					token.column 
 				]
 			)
 		)

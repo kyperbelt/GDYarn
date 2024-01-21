@@ -25,8 +25,10 @@ const TAG: String = "tag"
 const EXPRESSION: String = "expression"
 const INLINE_EXPRESSION: String = "inline-expression"
 const ASSIGNMENT: String = "assignment"
+const DECLARATION: String = "declaration"
 const DESTINATION: String = "destination"
 const FORMAT_FUNCTION: String = "format"
+const JUMP: String = "jump"
 # const FORMAT_FUNCTION_EXPRESSION: String = "format-expression"
 const SHORTCUT_OPTION: String = "shortcut-option"
 const SHORTCUT_OPTION_TAG: String = "shortcut-option-tag"
@@ -101,7 +103,6 @@ func __create_patterns():
 	patterns[TokenType.BeginCommand] = "\\<\\<"
 	patterns[TokenType.EndCommand] = "\\>\\>"
 	patterns[TokenType.Colon] = "\\:"
-	patterns[TokenType.Jump] = "jump(?!\\w)"
 	patterns[TokenType.Declare] = "declare(?!\\w)"
 	patterns[TokenType.ExplicitTypeAssignment] = "(\\:\\:|as(?!\\w))"
 	patterns[TokenType.ExpressionFunctionStart] = "\\{"
@@ -114,6 +115,8 @@ func __create_patterns():
 	patterns[TokenType.ElseIf] = "elseif(?!\\w)"
 	patterns[TokenType.EndIf] = "endif(?!\\w)"
 	patterns[TokenType.Set] = "set(?!\\w)"
+	patterns[TokenType.Declare]	= "declare(?!\\w)"
+	patterns[TokenType.Jump] = "jump(?!\\w)"
 	patterns[TokenType.ShortcutOption] = "\\-\\>\\s*"
 	pass
 
@@ -180,9 +183,18 @@ func __create_body_mode_states():
 	_body_mode_states[COMMAND].add_transition(TokenType.ElseIf, EXPRESSION)
 	_body_mode_states[COMMAND].add_transition(TokenType.EndIf)
 	_body_mode_states[COMMAND].add_transition(TokenType.Set, ASSIGNMENT)
+	# FIXME: This should go to DECLARATION instead of ASSIGNMENT
+	_body_mode_states[COMMAND].add_transition(TokenType.Declare, ASSIGNMENT)
+	_body_mode_states[COMMAND].add_transition(TokenType.Jump, JUMP)
 	_body_mode_states[COMMAND].add_transition(TokenType.EndCommand, BASE, true)
 	_body_mode_states[COMMAND].add_transition(TokenType.Identifier, COMMAND_OR_EXPRESSION)
 	_body_mode_states[COMMAND].add_text_rule(TokenType.Text)
+
+	_body_mode_states[JUMP] = LexerState.new(patterns)
+	_body_mode_states[JUMP].add_transition(TokenType.Identifier, DESTINATION)
+
+	_body_mode_states[DESTINATION] = LexerState.new(patterns)
+	_body_mode_states[DESTINATION].add_transition(TokenType.EndCommand, BASE, true)
 
 	_body_mode_states[COMMAND_OR_EXPRESSION] = LexerState.new(patterns)
 	_body_mode_states[COMMAND_OR_EXPRESSION].add_transition(TokenType.LeftParen, EXPRESSION)
@@ -196,6 +208,10 @@ func __create_body_mode_states():
 	_body_mode_states[ASSIGNMENT].add_transition(TokenType.MinusAssign, EXPRESSION)
 	_body_mode_states[ASSIGNMENT].add_transition(TokenType.MultiplyAssign, EXPRESSION)
 	_body_mode_states[ASSIGNMENT].add_transition(TokenType.DivideAssign, EXPRESSION)
+
+	# TODO: Flesh this out more so that it only accepts valid declarations and not just any expression 
+	#		Right now it just uses assignment rules. Also, it should accept "as <type>" and
+	_body_mode_states[DECLARATION] = LexerState.new(patterns)
 
 	_body_mode_states[FORMAT_FUNCTION] = LexerState.new(patterns)
 	_body_mode_states[FORMAT_FUNCTION].add_transition(TokenType.FormatFunctionEnd, BASE, true)

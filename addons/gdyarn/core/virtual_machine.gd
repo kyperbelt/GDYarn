@@ -2,6 +2,12 @@ class_name VirtualMachine
 extends Object
 
 signal resumed
+
+# imports 
+const ExecutionState = YarnGlobals.ExecutionState
+const ByteCode = YarnGlobals.ByteCode
+const HandlerState = YarnGlobals.HandlerState
+
 # var YarnGlobals = load("res://addons/gdyarn/autoloads/execution_states.gd")
 
 const EXECUTION_COMPLETE: String = "execution_complete_command"
@@ -27,7 +33,7 @@ var dialogueCompleteHandler: Callable
 
 var waiting: bool = false
 
-var executionState = YarnGlobals.ExecutionState.Stopped
+var executionState : ExecutionState = ExecutionState.Stopped
 
 var _dialogue
 var _program
@@ -54,7 +60,7 @@ func set_node(name: String) -> bool:
 		return false
 
 	if !_program.yarnNodes.has(name):
-		executionState = YarnGlobals.ExecutionState.Stopped
+		executionState = ExecutionState.Stopped
 		reset()
 		printerr("No node named %s has been loaded" % name)
 		return false
@@ -78,7 +84,7 @@ func current_node():
 
 #stop exectuion
 func stop():
-	executionState = YarnGlobals.ExecutionState.Stopped
+	executionState = ExecutionState.Stopped
 	reset()
 	_currentNode = null
 
@@ -87,7 +93,7 @@ func stop():
 #resume execution if waiting for result
 #return false if error
 func set_selected_option(id: int) -> bool:
-	if executionState != YarnGlobals.ExecutionState.WaitingForOption:
+	if executionState != ExecutionState.WaitingForOption:
 		printerr("Unable to select option when dialogue not waitinf for option")
 		return false
 
@@ -100,7 +106,7 @@ func set_selected_option(id: int) -> bool:
 	_state.currentOptions.clear()
 
 	#no longer waiting for option
-	executionState = YarnGlobals.ExecutionState.Suspended
+	executionState = ExecutionState.Suspended
 
 	return true
 
@@ -119,7 +125,7 @@ func resume() -> bool:
 	if _currentNode == null:
 		printerr("Cannot run dialogue with no node selected")
 		return false
-	if executionState == YarnGlobals.ExecutionState.WaitingForOption:
+	if executionState == ExecutionState.WaitingForOption:
 		printerr("Cannot run while waiting for option")
 		return false
 
@@ -145,10 +151,10 @@ func resume() -> bool:
 	if waiting:
 		return false
 
-	executionState = YarnGlobals.ExecutionState.Running
+	executionState = ExecutionState.Running
 
 	#execute instruction until something cool happens
-	while executionState == YarnGlobals.ExecutionState.Running:
+	while executionState == ExecutionState.Running:
 		#print(_currentNode.nodeName)
 		var currentInstruction = _currentNode.instructions[_state.programCounter]
 
@@ -157,7 +163,7 @@ func resume() -> bool:
 
 		if _state.programCounter >= _currentNode.instructions.size():
 			nodeCompleteHandler.call(_currentNode.nodeName)
-			executionState = YarnGlobals.ExecutionState.Stopped
+			executionState = ExecutionState.Stopped
 			reset()
 			dialogueCompleteHandler.call()
 			_dialogue.dlog("Run Complete")
@@ -174,13 +180,13 @@ func find_label_instruction(label: String) -> int:
 
 func run_instruction(instruction) -> bool:
 	match instruction.operation:
-		YarnGlobals.ByteCode.Label:
+		ByteCode.Label:
 			#do nothing woooo!
 			pass
-		YarnGlobals.ByteCode.JumpTo:
+		ByteCode.JumpTo:
 			#jump to named label
 			_state.programCounter = find_label_instruction(instruction.operands[0].value) - 1
-		YarnGlobals.ByteCode.RunLine:
+		ByteCode.RunLine:
 			#look up string from string table
 			#pass it to client as line
 			var key: String = instruction.operands[0].value
@@ -201,9 +207,9 @@ func run_instruction(instruction) -> bool:
 			var pause: int = lineHandler.call(line)
 
 			if pause == YarnGlobals.HandlerState.PauseExecution:
-				executionState = YarnGlobals.ExecutionState.Suspended
+				executionState = ExecutionState.Suspended
 
-		YarnGlobals.ByteCode.RunCommand:
+		ByteCode.RunCommand:
 			var commandText: String = instruction.operands[0].value
 
 			# TODO: allow for inline expressions and format functions in commands
@@ -221,42 +227,42 @@ func run_instruction(instruction) -> bool:
 						waiting = true
 						var pause = commandHandler.call(command)
 						if (pause == YarnGlobals.HandlerState.PauseExecution):
-							executionState = YarnGlobals.ExecutionState.Suspended
+							executionState = ExecutionState.Suspended
 						await self.resumed
 						waiting = false
 			else:
 				var pause = commandHandler.call(command)
 				if (pause == YarnGlobals.HandlerState.PauseExecution):
-					executionState = YarnGlobals.ExecutionState.Suspended
+					executionState = ExecutionState.Suspended
 
-		YarnGlobals.ByteCode.PushString:
+		ByteCode.PushString:
 			#push String var to stack
 			_state.push_value(instruction.operands[0].value)
-		YarnGlobals.ByteCode.PushNumber:
+		ByteCode.PushNumber:
 			#push number to stack
 
 			_state.push_value(instruction.operands[0].value)
-		YarnGlobals.ByteCode.PushBool:
+		ByteCode.PushBool:
 			#push boolean to stack
 			_state.push_value(instruction.operands[0].value)
 
-		YarnGlobals.ByteCode.PushNull:
+		ByteCode.PushNull:
 			#push null t
 			_state.push_value(NULL_VALUE)
 
-		YarnGlobals.ByteCode.JumpIfFalse:
+		ByteCode.JumpIfFalse:
 			#jump to named label if value of stack top is false
 			if !_state.peek_value().as_bool():
 				_state.programCounter = find_label_instruction(instruction.operands[0].value) - 1
 
-		YarnGlobals.ByteCode.Jump:
+		ByteCode.Jump:
 			#jump to label whose name is on the stack
 			var dest: String = _state.peek_value().as_string()
 			_state.programCounter = find_label_instruction(dest) - 1
-		YarnGlobals.ByteCode.Pop:
+		ByteCode.Pop:
 			#pop value from stack
 			_state.pop_value()
-		YarnGlobals.ByteCode.CallFunc:
+		ByteCode.CallFunc:
 			#call function with params on stack
 			#push any return value to stack
 			var functionName: String = instruction.operands[0].value
@@ -297,25 +303,25 @@ func run_instruction(instruction) -> bool:
 				_state.push_value(result)
 
 			pass
-		YarnGlobals.ByteCode.PushVariable:
+		ByteCode.PushVariable:
 			#get content of variable and push to stack
 			var name: String = instruction.operands[0].value
 			var loaded = _dialogue._variableStorage._get_value_(name)
 			_state.push_value(loaded)
-		YarnGlobals.ByteCode.StoreVariable:
+		ByteCode.StoreVariable:
 			#store top stack value to variable
 			var top = _state.peek_value()
 			var destination: String = instruction.operands[0].value
 			_dialogue._variableStorage._set_value_(destination, top)
 
-		YarnGlobals.ByteCode.Stop:
+		ByteCode.Stop:
 			#stop execution and repost it
 			nodeCompleteHandler.call(_currentNode.nodeName)
 			dialogueCompleteHandler.call()
-			executionState = YarnGlobals.ExecutionState.Stopped
+			executionState = ExecutionState.Stopped
 			reset()
 
-		YarnGlobals.ByteCode.RunNode:
+		ByteCode.RunNode:
 			#run a node
 			var name: String
 
@@ -329,9 +335,9 @@ func run_instruction(instruction) -> bool:
 			set_node(name)
 			_state.programCounter -= 1
 			if pause == YarnGlobals.HandlerState.PauseExecution:
-				executionState = YarnGlobals.ExecutionState.Suspended
+				executionState = ExecutionState.Suspended
 
-		YarnGlobals.ByteCode.AddOption:
+		ByteCode.AddOption:
 			# add an option to current state
 			var line = Line.new(instruction.operands[0].value)
 
@@ -344,10 +350,10 @@ func run_instruction(instruction) -> bool:
 
 			# line to show and node name
 			_state.currentOptions.append(SimpleEntry.new(line, instruction.operands[1].value))
-		YarnGlobals.ByteCode.ShowOptions:
+		ByteCode.ShowOptions:
 			#show options - stop if none
 			if _state.currentOptions.size() == 0:
-				executionState = YarnGlobals.ExecutionState.Stopped
+				executionState = ExecutionState.Stopped
 				reset()
 				dialogueCompleteHandler.call()
 				return false
@@ -359,7 +365,7 @@ func run_instruction(instruction) -> bool:
 				choices.append(Option.new(option.key, optionIndex, option.value))
 
 			#we cant continue until option chosen
-			executionState = YarnGlobals.ExecutionState.WaitingForOption
+			executionState = ExecutionState.WaitingForOption
 
 			#pass the options to the client
 			#delegate for them to call
@@ -369,7 +375,7 @@ func run_instruction(instruction) -> bool:
 			pass
 		_:
 			#bytecode messed up woopsise
-			executionState = YarnGlobals.ExecutionState.Stopped
+			executionState = ExecutionState.Stopped
 			reset()
 			printerr("Unknown Bytecode %s " % instruction.operation)
 			return false

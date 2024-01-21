@@ -90,6 +90,7 @@ enum TokenType {
 	ElseToken,
 	EndIf,
 	Declare,
+	
 	Set,
 	Jump,
 	# Boolean values
@@ -149,8 +150,9 @@ enum StatementTypes {
 	ShortcutOptionGroup,
 	Block,
 	IfStatement,
-	OptionStatement,
+	JumpStatement,
 	AssignmentStatement,
+	DeclarationStatement,
 	Line
 }
 
@@ -162,6 +164,19 @@ static func get_value_type_name(valueType: int):
 		if ValueType[key] == valueType:
 			return key
 	return "Invalid"
+
+static func get_expression_type_name(expressionType: ExpressionType)->String:
+	for key in ExpressionType.keys():
+		if ExpressionType[key] == expressionType:
+			return key
+	return "Invalid"
+
+static func get_statement_type_name(statementType: StatementTypes)->String:
+	for key in StatementTypes.keys():
+		if StatementTypes[key] == statementType:
+			return key
+	return "Invalid"
+
 
 
 func defaultValue(type):

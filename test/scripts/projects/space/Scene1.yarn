@@ -1,0 +1,49 @@
+title: Scene1_Start
+position: -106,-154
+---
+<<declare $naquadria to 0>>
+
+Jim: I'm so glad you could make it, I've been waiting for you.
+Carter: I'm sorry I'm late, I had to finish up some work.
+Jim: No worries, I'm just glad you could make it. 
+Jim: I've been wanting to talk to you about something.
+Carter: What's up?
+<<if $naquadria_amount > 5>>
+    Jim: I've been thinking about the naquadria you found on P3X-403.
+    Jim: We have plenty of it, and I think we should use it to power the Stargate.
+    Carter: We can use a bit to help power the city.
+    <<jump Scene1_End>>
+<<else>>
+    Jim: We only have {$naquadria_amount} [plural {$naquadria_amount} one="gram" other="grams"] of Naquadria
+	<<Some Example command>>
+    <<jump Scene1_Solution>>
+<<endif>>
+
+===
+title: Scene1_End
+position: 231,-36
+---
+Jim: I'll get the team together and we can start working on it.
+===
+
+title: Scene1_Solution
+position: -97,125
+---
+/// some city name
+<<declare $city_name = "some city">>
+
+Jim: What do you think we should do?
+-> I think we should use it to power the Stargate
+    Jim: I agree, we should use it to power the Stargate.
+    <<jump Scene1_End>>
+-> I think we should power the {$city_name} with it <<if $city_found == true>>
+    Jim: I don't think that's a good idea, we should use it to power the Stargate.
+    <<jump Scene1_Argument>>
+===
+title: Scene1_Argument
+position: 218,320
+---
+Carter: If we don't help them, [shake rate=20.0 level=5 connected=1][b]they'll die!!![/b][/shake]
+Jim: Ok, ok, I get it. We'll help them.
+<<set_favor Jim {get_favor("Jim") - 1}>>
+===

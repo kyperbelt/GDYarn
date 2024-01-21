@@ -2,6 +2,8 @@ class_name YarnParser
 # const YarnGlobals = preload("res://addons/gdyarn/autoloads/execution_states.gd")
 # const Lexer = preload("res://addons/gdyarn/core/compiler/lexer.gd")
 
+const Result := ErrorUtils.Result
+const ResultError := ErrorUtils.ResultError
 const Token := YarnLexer.Token
 const TokenType := YarnGlobals.TokenType
 
@@ -71,7 +73,7 @@ func next_symbols_are(validTypes: Array, line: int = -1) -> bool:
 ## of the expected type
 func expect_symbol(token_types: Array = []) -> Token:
 	var t := self._tokens.pop_front() as Token
-	print("token consumed %s" % [t._to_string()])
+	# print("token consumed %s" % [t._to_string()])
 	var size = token_types.size()
 
 	if size == 0:
@@ -95,8 +97,9 @@ func expect_symbol(token_types: Array = []) -> Token:
 	# TODO: Move this to Some type of Diagnostic system, do not print it in place
 	printerr(
 		(
-			"unexpected token: Expexted [%s] but got [%s<%s>] @(%s,%s)"
-			% [
+			"[%s:%s] unexpected token: Expexted [%s] but got [%s<%s>] @(%s,%s)"
+			% [ ErrorUtils.__SCRIPT_NAME(),
+				ErrorUtils.__LINE(),
 				expected_types,
 				YarnGlobals.token_name(t.type),
 				t.value,
@@ -190,10 +193,10 @@ class YarnNode:
 				printerr("error parsing statement")
 				break
 			statements.append(statement)
-			print("top_token=%s value=%s" % [YarnGlobals.token_name(parser.tokens().front().type), parser.tokens().front().value])
+			# print("top_token=%s value=%s" % [YarnGlobals.token_name(parser.tokens().front().type), parser.tokens().front().value])
 			#print(statements.size())
 
-		print("top_token=%s" % [YarnGlobals.token_name(parser.tokens().front().type)])
+		# print("top_token=%s" % [YarnGlobals.token_name(parser.tokens().front().type)])
 		# if parser.next_symbol_is([TokenType.NodeDelimiter]):
 		# 	parser.expect_symbol()
 
@@ -222,7 +225,6 @@ class YarnNode:
 			parser.error = ERR_INVALID_DATA
 			
 		if parser.next_symbol_is([TokenType.HeaderDelimiter]):
-			print("header delimiter found")
 			parser.expect_symbol([TokenType.HeaderDelimiter])
 		else:
 			printerr("no header delimiter found")
@@ -379,15 +381,15 @@ class Statement:
 	var type: int
 	var block: Block
 	var ifStatement: IfStatement
-	# var optionStatement: OptionStatement
+	var jumpStatement: JumpStatement
 	var assignment: Assignment
+	var declaration: Declaration
 	var shortcutOptionGroup: ShortcutOptionGroup
 	var customCommand: CustomCommand
 	var line: LineNode
 
 	func _init(parent: ParseNode, parser):
 		super(parent, parser)
-		print("hello")
 		if parser.error != OK:
 			return
 
@@ -399,10 +401,28 @@ class Statement:
 			printerr("parsing if statement")
 			ifStatement = IfStatement.new(self, parser)
 			type = Type.IfStatement
+		elif JumpStatement.can_parse(parser):
+			printerr("parsing jump statement")
+			var result : Result = JumpStatement.parse(self, parser)
+			if !result.is_ok():
+				printerr("error parsing jump statement")
+				parser.error = ERR_INVALID_DATA
+				return # FIXME: this should return a result instead of breaking 
+			type = Type.JumpStatement
+			jumpStatement = result.unwrap()
 		elif Assignment.can_parse(parser):
 			printerr("parsing assignment")
 			assignment = Assignment.new(self, parser)
 			type = Type.AssignmentStatement
+		elif Declaration.can_parse(parser):
+			printerr("parsing declaration")
+			var result : Result = Declaration.parse(self, parser) 
+			if !result.is_ok():
+				printerr("error parsing declaration")
+				parser.error = ERR_INVALID_DATA
+				return # FIXME: this should return a result instead of breaking
+			declaration = result.unwrap()
+			type = Type.DeclarationStatement
 		elif ShortcutOptionGroup.can_parse(parser):
 			# print("ST:%s[value=%s]" % [YarnGlobals.token_name(parser.tokens().front().type), parser.tokens().front().value])
 			printerr("parsing shortcut option group")
@@ -410,8 +430,13 @@ class Statement:
 			type = Type.ShortcutOptionGroup
 		elif CustomCommand.can_parse(parser):
 			printerr("parsing commands")
-			customCommand = CustomCommand.new(self, parser)
+			var result : Result = CustomCommand.parse(self, parser)
+			if !result.is_ok():
+				printerr("error parsing custom command")
+				parser.error = ERR_INVALID_DATA
+				return # FIXME: this should return a result instead of breaking
 			type = Type.CustomCommand
+			customCommand = result.unwrap()
 		elif parser.next_symbol_is([TokenType.Text]):
 			printerr("parsing line")
 			# line = parser.expect_symbol([TokenType.Text]).value
@@ -423,8 +448,8 @@ class Statement:
 
 			printerr(
 				(
-					"expected a statement but got %s instead. (probably an inbalanced if statement)"
-					% parser.tokens().front()._to_string()
+					"[%s>line:%d] expected a statement but got %s instead. (probably an inbalanced if statement"
+					% [ErrorUtils.__SCRIPT_NAME(), ErrorUtils.__LINE(),parser.tokens().front()._to_string()]
 				)
 			)
 			parser.error = ERR_PARSE_ERROR
@@ -441,8 +466,10 @@ class Statement:
 				info.append(ifStatement.tree_string(indentLevel))
 			Type.AssignmentStatement:
 				info.append(assignment.tree_string(indentLevel))
-			# Type.OptionStatement:
-			# 	info.append(optionStatement.tree_string(indentLevel))
+			Type.JumpStatement:
+				info.append(jumpStatement.tree_string(indentLevel))
+			Type.DeclarationStatement:
+				info.append(declaration.tree_string(indentLevel))
 			Type.ShortcutOptionGroup:
 				info.append(shortcutOptionGroup.tree_string(indentLevel))
 			Type.CustomCommand:
@@ -457,19 +484,57 @@ class Statement:
 		return "".join(info)
 
 
+	
+enum CustomCommandType { Expression, ClientCommand }
+
+class JumpStatement:
+	extends ParseNode
+
+	var destination: String
+
+	func _init(parent: ParseNode, parser):
+		super(parent, parser)
+
+	func tree_string(indentLevel: int) -> String:
+		return tab(indentLevel, "Jump: %s" % destination)
+
+	static func can_parse(parser) -> bool:
+		return parser.next_symbols_are([TokenType.BeginCommand, TokenType.Jump])
+
+	static func parse(parent: ParseNode, parser) -> Result:
+		var jump_statement : JumpStatement = JumpStatement.new(parent, parser)
+		if !parser.expect_symbol([TokenType.BeginCommand]):
+			return Result.err("Expected BeginCommand in JumpStatement")
+		if !parser.expect_symbol([TokenType.Jump]):
+			return Result.err("Expected Jump in JumpStatement")
+
+		jump_statement.destination = parser.expect_symbol([TokenType.Identifier]).value
+		if !parser.expect_symbol([TokenType.EndCommand]):
+			return Result.err("Expected EndCommand Token in JumpStatement")
+		return Result.ok(jump_statement)
+
 class CustomCommand:
 	extends ParseNode
 
-	enum Type { Expression, ClientCommand }
 
 	var type: int
 	var expression: ExpressionNode
 	var clientCommand: String
 
-	func _init(parent: ParseNode, parser):
+	func _init(parent: ParseNode, parser, type: YarnParser.CustomCommandType = YarnParser.CustomCommandType.Expression, expression: ExpressionNode = null, clientCommand: String = ""):
 		super(parent, parser)
-		parser.expect_symbol([TokenType.BeginCommand])
 
+	func tree_string(indentLevel: int) -> String:
+		match type:
+			YarnParser.CustomCommandType.Expression:
+				return tab(indentLevel, "Expression: %s" % expression.tree_string(indentLevel + 1))
+			YarnParser.CustomCommandType.ClientCommand:
+				return tab(indentLevel, "Command: %s" % clientCommand)
+		return ""
+
+	static func parse(parent: ParseNode, parser) -> Result:
+		var custom_command : CustomCommand = CustomCommand.new(parent, parser)
+		parser.expect_symbol([TokenType.BeginCommand])
 		var commandTokens = []
 		commandTokens.append(parser.expect_symbol())
 
@@ -487,22 +552,21 @@ class CustomCommand:
 			&& commandTokens[0].type == TokenType.Identifier
 			&& commandTokens[1].type == TokenType.LeftParen
 		):
-			var p = get_script().new(commandTokens, parser.library)
-			var expression: ExpressionNode = ExpressionNode.parse_expressions(self, p)
-			type = Type.Expression
-			self.expression = expression
+			var p = YarnParser.new(commandTokens)
+			var expression: ExpressionNode = ExpressionNode.parse_expressions(custom_command, p)
+			custom_command.type = YarnParser.CustomCommandType.Expression
+			custom_command.expression = expression
 		else:
 			#otherwise evaluuate command
-			type = Type.ClientCommand
-			self.clientCommand = commandTokens[0].value
+			custom_command.type = YarnParser.CustomCommandType.ClientCommand
+			custom_command.clientCommand = commandTokens[0].value
 
-	func tree_string(indentLevel: int) -> String:
-		match type:
-			Type.Expression:
-				return tab(indentLevel, "Expression: %s" % expression.tree_string(indentLevel + 1))
-			Type.ClientCommand:
-				return tab(indentLevel, "Command: %s" % clientCommand)
-		return ""
+		if custom_command.clientCommand.is_empty():
+			return Result.err("Custom command is empty")
+		if custom_command.type == YarnParser.CustomCommandType.Expression && custom_command.expression == null:
+			return Result.err("Custom command expression is null")
+		return Result.ok(custom_command)
+		
 
 	static func can_parse(parser) -> bool:
 		return (
@@ -765,14 +829,18 @@ class IfStatement:
 		for clause in clauses:
 			if first:
 				info.append(tab(indentLevel, "if:", true))
+				first = false
 			elif clause.expression != null:
 				info.append(tab(indentLevel, "Else If", true))
 			else:
 				info.append(tab(indentLevel, "Else:", true))
 
-			info.append(clause.tree_string(indentLevel))
+			info.append(clause.tree_string(indentLevel + 1))
 
 		return "".join(info)
+
+	static func parse_if_statement(parent: ParseNode, parser) -> IfStatement:
+		return IfStatement.new(parent, parser)
 
 	static func can_parse(parser) -> bool:
 		return parser.next_symbols_are(
@@ -843,10 +911,10 @@ class ValueNode:
 class ExpressionNode:
 	extends ParseNode
 
-	var type
+	var type : YarnGlobals.ExpressionType
 	var value: ValueNode
 	var function: String
-	var params: Array = []  #ExpressionNode
+	var params: Array[ExpressionNode] = []  #ExpressionNode
 
 	func _init(
 		parent: ParseNode, parser, value: ValueNode, function: String = "", params: Array = []
@@ -879,8 +947,9 @@ class ExpressionNode:
 	#stream of expresions into postfix notaion, then
 	#build a tree of expressions
 	static func parse_expressions(parent: ParseNode, parser) -> ExpressionNode:
-		var rpn: Array[TokenType] = []  #token
-		var opStack: Array[TokenType] = []  #token
+		var rpn: Array[Token] = []  #token
+		var opStack: Array[Token] = []  #token
+		var line_number: int = parser.tokens().front().line_number
 
 		#track params
 		var funcStack: Array = []  #token
@@ -906,6 +975,10 @@ class ExpressionNode:
 		while parser.tokens().size() > 0 && parser.next_symbol_is(validTypes):
 			var next = parser.expect_symbol(validTypes)  #lexer.Token
 
+			# parse current state of everything 
+			print("next token %s" % [next._to_string()]) 
+			print ("opStack %s" % [opStack])
+			print ("rpn %s" % [rpn])
 			if (
 				next.type == TokenType.Variable
 				|| next.type == TokenType.Number
@@ -1015,7 +1088,8 @@ class ExpressionNode:
 
 		#if rpn is empty then this is not expression
 		if rpn.size() == 0:
-			printerr("Error parsing expression: Expression not found!")
+			printerr("Expression not found on line %d" % line_number)
+			return null
 
 		#build expression tree
 		var first = rpn.front()
@@ -1083,6 +1157,13 @@ class ExpressionNode:
 					% [first.line_number, first.column]
 				)
 			)
+			for i in range(eval_stack.size()):
+				printerr(
+					(
+						"eval_stack[%d] = %s"
+						% [i, eval_stack[i].tree_string(0)]
+					)
+				)
 
 		return eval_stack.pop_back()
 
@@ -1127,6 +1208,57 @@ class ExpressionNode:
 
 		return false
 
+class Declaration:
+	extends ParseNode
+
+	## variable destination name
+	var destination: String 
+	var value: ExpressionNode
+	var type : YarnGlobals.ValueType
+	
+	func _init(parent: ParseNode, parser):
+		super(parent, parser)
+
+	func tree_string(indentLevel: int) -> String:
+		return tab(indentLevel, "Declaration: %s=%s as %s" % [destination,value.tree_string(0),YarnGlobals.get_value_type_name(type)])
+
+	static func can_parse(parser) -> bool:
+		return parser.next_symbols_are(
+			[TokenType.BeginCommand, TokenType.Declare]
+		)
+	
+	static func parse(parent: ParseNode, parser) -> Result:
+		var declaration : Declaration = Declaration.new(parent, parser)
+		if !parser.expect_symbol([TokenType.BeginCommand]):
+			return Result.err("Expected BeginCommand in Declaration")
+		if !parser.expect_symbol([TokenType.Declare]):
+			return Result.err("Expected Declare in Declaration")
+		
+		var destination : Token = parser.expect_symbol([TokenType.Variable])
+		if !destination: 
+			return Result.err("Expected Variable in Declaration") 
+		declaration.destination = destination.value
+
+		if !parser.expect_symbol([TokenType.EqualToOrAssign]):
+			return Result.err("Expected EqualToOrAssign in Declaration")
+		 
+		## TODO: This Parse_expression should return a result
+		var value : ExpressionNode = ExpressionNode.parse_expressions(declaration, parser)
+		if !value:
+			return Result.err("Expected Expression in Declaration")
+
+		if value.type != YarnGlobals.ExpressionType.Value:
+			return Result.err("Expected Value in Declaration")
+
+		declaration.value = value
+
+		## TODO: add the AS <type> parsing here once thats implemented in the lexer
+
+		if !parser.expect_symbol([TokenType.EndCommand]):
+			return Result.err("Expected EndCommand Token in Declaration")
+
+		return Result.ok(declaration)
+	
 
 class Assignment:
 	extends ParseNode
@@ -1279,3 +1411,5 @@ class Clause:
 		return "%*s %s%s" % [indentLevel, tabPrecursor, input, "" if !newLine else "\n"]
 	# func tab(indentLevel : int , input : String,newLine : bool = true)->String:
 	# 	return ("%*s| %s%s"% [indentLevel*2,"",input,("" if !newLine else "\n")])
+
+

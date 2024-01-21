@@ -1,0 +1,40 @@
+title: Start
+---
+
+<<declare $int = 0>>
+<<declare $bool = true>>
+<<declare $math = 0>>
+<<declare $externally_set_number = 0>>
+<<declare $externally_set_bool = false>>
+
+// These variables are set externally in the test plan, before the script begins running
+<<call assert($externally_set_bool == true)>>
+<<call assert($externally_set_number == 1)>>
+
+// Expression testing
+
+<<set $int to 1>>
+<<call assert($int == 1)>>
+<<call assert($int != 2)>>
+
+// Test unary operators
+
+<<call assert(!$bool == false)>>
+<<call assert(-$int == -1)>>
+<<call assert(-$int == 0 - 1)>>
+
+// Test more complex expressions
+<<set $math = 5 * 2 - 2 * -1 >>
+<<call assert($math is 12)>>
+
+// Test % operator
+<<set $math = 12 >>
+<<set $math = $math % 5 >>
+<<call assert($math is 2)>>
+
+// Test floating point math
+<<call assert(1 / 2 == 0.5)>>
+<<call assert(0.1 + 0.1 == 0.2)>>
+
+
+===

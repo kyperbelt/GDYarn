@@ -1,3 +1,4 @@
+
 var text: String
 var nodeName: String
 var lineNumber: int
