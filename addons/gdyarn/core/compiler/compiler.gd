@@ -59,7 +59,6 @@ static func compile_string(
 	# end of each line while preserving the indentation on the left side
 	for i in range(source_lines.size()):
 		source_lines[i] = source_lines[i].strip_edges(false, true)
-		print("%d-%s" % [i+1, source_lines[i]])
 
 	# once we have removed the trailing whitespace we can join the lines back together
 	var prepared_source_code := '\n'.join(source_lines)
@@ -379,30 +378,15 @@ func generate_if(node, ifStatement):
 
 
 #compile instructions for options
-func generate_jump(node, option):
+func generate_jump(node, jump_statement: YarnParser.JumpStatement):
 	# print("generating option")
-	var destination: String = option.destination
 
-	emit(YarnGlobals.ByteCode.RunNode, node, [Operand.new(destination)])
-	# if !option.line:
-	# 	#jump to another node
-	# else:
-	# 	var lineID: String = option.line.lineid
-	# 	var stringID = register_string(
-	# 		option.line.line_text, node.node_name, lineID, option.lineNumber, option.line.tags
-	# 	)
-	#
-	# 	var expressionCount = option.line.substitutions.size()
-	#
-	# 	while !option.line.substitutions.is_empty():
-	# 		var inLineExpression = option.line.substitutions.pop_back()
-	# 		generate_expression(node, inLineExpression.expression)
-	#
-	# 	emit(
-	# 		YarnGlobals.ByteCode.AddOption,
-	# 		node,
-	# 		[Operand.new(stringID), Operand.new(destination), Operand.new(expressionCount)]
-	# 	)
+	if (jump_statement.destination_expression != null):
+		generate_expression(node, jump_statement.destination_expression)
+		emit(YarnGlobals.ByteCode.RunNode, node) 
+	else:
+		var destination: String = jump_statement.destination
+		emit(YarnGlobals.ByteCode.RunNode, node, [Operand.new(destination)])
 
 
 #compile instructions for assigning values

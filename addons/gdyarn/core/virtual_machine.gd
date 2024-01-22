@@ -377,7 +377,7 @@ func run_instruction(instruction) -> bool:
 			#bytecode messed up woopsise
 			executionState = ExecutionState.Stopped
 			reset()
-			printerr("Unknown Bytecode %s " % instruction.operation)
+			printerr("<%s:%s> Unknown Bytecode %s " % [ErrorUtils.__SCRIPT_NAME(), ErrorUtils.__LINE(),instruction.operation])
 			return false
 
 	return true

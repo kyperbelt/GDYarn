@@ -31,14 +31,15 @@ position: -97,125
 ---
 /// some city name
 <<declare $city_name = "some city">>
+<<declare $some_node = "Scene1_Argument">>
 
 Jim: What do you think we should do?
 -> I think we should use it to power the Stargate
     Jim: I agree, we should use it to power the Stargate.
     <<jump Scene1_End>>
--> I think we should power the {$city_name} with it <<if $city_found == true>>
+-> I think we should power the generator in {$city_name} city with it. <<if $city_found == true>>
     Jim: I don't think that's a good idea, we should use it to power the Stargate.
-    <<jump Scene1_Argument>>
+    <<jump {$some_node}>>
 ===
 title: Scene1_Argument
 position: 218,320

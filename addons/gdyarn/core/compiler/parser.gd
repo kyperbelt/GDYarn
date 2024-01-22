@@ -7,6 +7,11 @@ const ResultError := ErrorUtils.ResultError
 const Token := YarnLexer.Token
 const TokenType := YarnGlobals.TokenType
 
+enum ErrorType{
+	Compilation, 
+	YarnScript
+}
+
 var error := OK
 var currentNodeName = "Start"
 
@@ -25,16 +30,16 @@ func parse_nodes()->Array[YarnNode]:
 	var nodes: Array[YarnNode] = []  #YarnNode
 	while _tokens.size() > 0 && !next_symbol_is([TokenType.EndOfInput]):
 		var yarn_node := parse_node()
-		print("parsed node %s" % [yarn_node.name])
 		if error != OK:
-			printerr("error parsing node")
+			printerr("<%s:%s> Error parsing node" % [ErrorUtils.__SCRIPT_NAME(), ErrorUtils.__LINE()])
 			break
 		nodes.append(yarn_node)
 		if next_symbol_is([TokenType.NodeDelimiter]):
 			expect_symbol([TokenType.NodeDelimiter])
 		else:
 			var name_of_top_of_stack = YarnGlobals.token_name(_tokens.front().type)
-			printerr("expected node delimiter")
+			# FIXME: File Error not parser, do not pring to console, toss in diagnostics for compilation
+			printerr("<%s:%s> Expected Node Delimiter" % [ErrorUtils.__SCRIPT_NAME(), ErrorUtils.__LINE()])
 			error = ERR_INVALID_DATA
 			break
 	return nodes
@@ -73,7 +78,6 @@ func next_symbols_are(validTypes: Array, line: int = -1) -> bool:
 ## of the expected type
 func expect_symbol(token_types: Array = []) -> Token:
 	var t := self._tokens.pop_front() as Token
-	# print("token consumed %s" % [t._to_string()])
 	var size = token_types.size()
 
 	if size == 0:
@@ -193,12 +197,7 @@ class YarnNode:
 				printerr("error parsing statement")
 				break
 			statements.append(statement)
-			# print("top_token=%s value=%s" % [YarnGlobals.token_name(parser.tokens().front().type), parser.tokens().front().value])
-			#print(statements.size())
 
-		# print("top_token=%s" % [YarnGlobals.token_name(parser.tokens().front().type)])
-		# if parser.next_symbol_is([TokenType.NodeDelimiter]):
-		# 	parser.expect_symbol()
 
 	func _parse_headers(parser:YarnParser)->void:
 		while (parser.tokens().size() > 0 && !parser.next_symbol_is([TokenType.EndOfInput, TokenType.HeaderDelimiter])):
@@ -394,15 +393,12 @@ class Statement:
 			return
 
 		if Block.can_parse(parser):
-			printerr("parsing a block")
 			block = Block.new(self, parser)
 			type = Type.Block
 		elif IfStatement.can_parse(parser):
-			printerr("parsing if statement")
 			ifStatement = IfStatement.new(self, parser)
 			type = Type.IfStatement
 		elif JumpStatement.can_parse(parser):
-			printerr("parsing jump statement")
 			var result : Result = JumpStatement.parse(self, parser)
 			if !result.is_ok():
 				printerr("error parsing jump statement")
@@ -411,25 +407,20 @@ class Statement:
 			type = Type.JumpStatement
 			jumpStatement = result.unwrap()
 		elif Assignment.can_parse(parser):
-			printerr("parsing assignment")
 			assignment = Assignment.new(self, parser)
 			type = Type.AssignmentStatement
 		elif Declaration.can_parse(parser):
-			printerr("parsing declaration")
 			var result : Result = Declaration.parse(self, parser) 
 			if !result.is_ok():
 				printerr("error parsing declaration")
 				parser.error = ERR_INVALID_DATA
-				return # FIXME: this should return a result instead of breaking
+				return # FIXME: this should return a result instead of breaking and it is a Parser error
 			declaration = result.unwrap()
 			type = Type.DeclarationStatement
 		elif ShortcutOptionGroup.can_parse(parser):
-			# print("ST:%s[value=%s]" % [YarnGlobals.token_name(parser.tokens().front().type), parser.tokens().front().value])
-			printerr("parsing shortcut option group")
 			shortcutOptionGroup = ShortcutOptionGroup.new(self, parser)
 			type = Type.ShortcutOptionGroup
 		elif CustomCommand.can_parse(parser):
-			printerr("parsing commands")
 			var result : Result = CustomCommand.parse(self, parser)
 			if !result.is_ok():
 				printerr("error parsing custom command")
@@ -438,7 +429,6 @@ class Statement:
 			type = Type.CustomCommand
 			customCommand = result.unwrap()
 		elif parser.next_symbol_is([TokenType.Text]):
-			printerr("parsing line")
 			# line = parser.expect_symbol([TokenType.Text]).value
 			# type = Type.Line
 			line = LineNode.new(self, parser)
@@ -479,7 +469,6 @@ class Statement:
 			_:
 				printerr("cannot print statement")
 
-		#print("statement --")
 
 		return "".join(info)
 
@@ -491,12 +480,16 @@ class JumpStatement:
 	extends ParseNode
 
 	var destination: String
+	var destination_expression: ExpressionNode
 
 	func _init(parent: ParseNode, parser):
 		super(parent, parser)
 
 	func tree_string(indentLevel: int) -> String:
-		return tab(indentLevel, "Jump: %s" % destination)
+		if destination_expression:
+			return tab(indentLevel, "Jump: %s" % destination_expression.tree_string(0))
+		else:
+			return tab(indentLevel, "Jump: %s" % destination)
 
 	static func can_parse(parser) -> bool:
 		return parser.next_symbols_are([TokenType.BeginCommand, TokenType.Jump])
@@ -508,7 +501,12 @@ class JumpStatement:
 		if !parser.expect_symbol([TokenType.Jump]):
 			return Result.err("Expected Jump in JumpStatement")
 
-		jump_statement.destination = parser.expect_symbol([TokenType.Identifier]).value
+		if InlineExpression.can_parse(parser):
+			var ie = InlineExpression.new(jump_statement, parser)
+			jump_statement.destination_expression = ie.expression
+		elif parser.next_symbol_is([TokenType.Identifier]):
+			jump_statement.destination = parser.expect_symbol([TokenType.Identifier]).value
+
 		if !parser.expect_symbol([TokenType.EndCommand]):
 			return Result.err("Expected EndCommand Token in JumpStatement")
 		return Result.ok(jump_statement)
@@ -540,7 +538,7 @@ class CustomCommand:
 
 		while !parser.next_symbol_is([TokenType.EndCommand]):
 			var token:Token = parser.expect_symbol()
-			print("token type %s" % [YarnGlobals.token_name(token.type)])
+			# print("token type %s" % [YarnGlobals.token_name(token.type)])
 			commandTokens.append(token)
 
 		parser.expect_symbol([TokenType.EndCommand])
@@ -937,7 +935,6 @@ class ExpressionNode:
 			YarnGlobals.ExpressionType.FunctionCall:
 				info.append(tab(indentLevel, "Func[%s - params(%s)]:{" % [function, params.size()]))
 				for param in params:
-					#print("----> %s paramSize:%s"%[(function) , params.size()])
 					info.append(param.tree_string(indentLevel + 1))
 				info.append(tab(indentLevel, "}"))
 
@@ -948,7 +945,7 @@ class ExpressionNode:
 	#build a tree of expressions
 	static func parse_expressions(parent: ParseNode, parser) -> ExpressionNode:
 		var rpn: Array[Token] = []  #token
-		var opStack: Array[Token] = []  #token
+		var op_stack: Array[Token] = []  #token
 		var line_number: int = parser.tokens().front().line_number
 
 		#track params
@@ -976,9 +973,6 @@ class ExpressionNode:
 			var next = parser.expect_symbol(validTypes)  #lexer.Token
 
 			# parse current state of everything 
-			print("next token %s" % [next._to_string()]) 
-			print ("opStack %s" % [opStack])
-			print ("rpn %s" % [rpn])
 			if (
 				next.type == TokenType.Variable
 				|| next.type == TokenType.Number
@@ -990,19 +984,20 @@ class ExpressionNode:
 				#output primitives
 				rpn.append(next)
 			elif next.type == TokenType.Identifier:
-				opStack.push_back(next)
+				op_stack.push_back(next)
 				funcStack.push_back(next)
 
 				#next token is parent - left
 				next = parser.expect_symbol([TokenType.LeftParen])
-				opStack.push_back(next)
+				op_stack.push_back(next)
 			elif next.type == TokenType.Comma:
 				#resolve sub expression before moving on
-				while opStack.back().type != TokenType.LeftParen:
-					var p = opStack.pop_back()
+				while op_stack.back().type != TokenType.LeftParen:
+					var p = op_stack.pop_back()
 					if p == null:
 						printerr("unbalanced parenthesis %s " % next.name)
 						parser.error = ERR_INVALID_DATA
+						# FIXME: Should return a null error
 						return null
 						break
 					rpn.append(p)
@@ -1047,28 +1042,28 @@ class ExpressionNode:
 					next.type = TokenType.EqualTo
 
 				#operator precedence
-				while ExpressionNode.is_apply_precedence(next.type, opStack):
-					var op = opStack.pop_back()
+				while ExpressionNode.is_apply_precedence(next.type, op_stack):
+					var op = op_stack.pop_back()
 					rpn.append(op)
 
-				opStack.push_back(next)
+				op_stack.push_back(next)
 
 			elif next.type == TokenType.LeftParen:
 				#entered parenthesis sub expression
-				opStack.push_back(next)
+				op_stack.push_back(next)
 
 			elif next.type == TokenType.RightParen:
 				#leaving sub expression
 				# resolve order of operations
-				while opStack.back().type != TokenType.LeftParen:
-					rpn.append(opStack.pop_back())
-					if opStack.back() == null:
+				while op_stack.back().type != TokenType.LeftParen:
+					rpn.append(op_stack.pop_back())
+					if op_stack.back() == null:
 						printerr("Unbalanced parenthasis #RightParen. Parser.ExpressionNode")
 						parser.error = ERR_INVALID_DATA
 						return null
 
-				opStack.pop_back()  # pop left parenthesis
-				if !opStack.is_empty() && opStack.back().type == TokenType.Identifier:
+				op_stack.pop_back()  # pop left parenthesis
+				if !op_stack.is_empty() && op_stack.back().type == TokenType.Identifier:
 					#function call
 					#last token == left paren this == no params
 					#else
@@ -1076,15 +1071,15 @@ class ExpressionNode:
 					if last.type != TokenType.LeftParen:
 						funcStack.back().paramCount += 1
 
-					rpn.append(opStack.pop_back())
+					rpn.append(op_stack.pop_back())
 					funcStack.pop_back()
 
 			#record last token used
 			last = next
 
 		#no more tokens : pop operators to output
-		while opStack.size() > 0:
-			rpn.append(opStack.pop_back())
+		while op_stack.size() > 0:
+			rpn.append(op_stack.pop_back())
 
 		#if rpn is empty then this is not expression
 		if rpn.size() == 0:

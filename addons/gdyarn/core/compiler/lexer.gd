@@ -16,24 +16,29 @@ const LINE_SEPARATOR: String = "\n"
 
 
 # STATES 
-const BASE: String = "base"
-const HEADER_TAG: String = "header_tag"
-const HEADER_TAG_VALUE :String= "header_tag_value"
-const COMMAND: String = "command"
+const BASE: StringName= "base"
+const HEADER_TAG: StringName = "header_tag"
+const HEADER_TAG_VALUE :StringName= "header_tag_value"
+const COMMAND: StringName = "command"
 const SHORTCUT:= &"shortcut"
-const TAG: String = "tag"
-const EXPRESSION: String = "expression"
-const INLINE_EXPRESSION: String = "inline-expression"
-const ASSIGNMENT: String = "assignment"
-const DECLARATION: String = "declaration"
-const DESTINATION: String = "destination"
-const FORMAT_FUNCTION: String = "format"
-const JUMP: String = "jump"
-# const FORMAT_FUNCTION_EXPRESSION: String = "format-expression"
-const SHORTCUT_OPTION: String = "shortcut-option"
-const SHORTCUT_OPTION_TAG: String = "shortcut-option-tag"
-const COMMAND_OR_EXPRESSION: String = "command-or-expression"
-const FORMAT_EXPRESSION: String = "format-expression"
+const TAG: StringName = "tag"
+const EXPRESSION: StringName = "expression"
+const INLINE_EXPRESSION: StringName = "inline-expression"
+const ASSIGNMENT: StringName = "assignment"
+const DECLARATION: StringName = "declaration"
+const DECLARATION_ASSIGNMENT: StringName = "declaration-assignment"
+const DECLARATION_VALUE: StringName = "declaration-value"
+const DECLARATION_EXPLICIT_TYPING : StringName = "declaration-explicit-typing"
+const DESTINATION: StringName = "destination"
+const FORMAT_FUNCTION: StringName = "format"
+const JUMP: StringName = "jump"
+const JUMP_EXPRESSION: StringName = "jump-expression"
+const JUMP_CLOSE: StringName = "jump-close"
+# const FORMAT_FUNCTION_EXPRESSION: StringName = "format-expression"
+const SHORTCUT_OPTION: StringName = "shortcut-option"
+const SHORTCUT_OPTION_TAG: StringName = "shortcut-option-tag"
+const COMMAND_OR_EXPRESSION: StringName = "command-or-expression"
+const FORMAT_EXPRESSION: StringName = "format-expression"
 
 # MISC
 const WHITESPACE: String = "\\s*"
@@ -183,8 +188,7 @@ func __create_body_mode_states():
 	_body_mode_states[COMMAND].add_transition(TokenType.ElseIf, EXPRESSION)
 	_body_mode_states[COMMAND].add_transition(TokenType.EndIf)
 	_body_mode_states[COMMAND].add_transition(TokenType.Set, ASSIGNMENT)
-	# FIXME: This should go to DECLARATION instead of ASSIGNMENT
-	_body_mode_states[COMMAND].add_transition(TokenType.Declare, ASSIGNMENT)
+	_body_mode_states[COMMAND].add_transition(TokenType.Declare, DECLARATION)
 	_body_mode_states[COMMAND].add_transition(TokenType.Jump, JUMP)
 	_body_mode_states[COMMAND].add_transition(TokenType.EndCommand, BASE, true)
 	_body_mode_states[COMMAND].add_transition(TokenType.Identifier, COMMAND_OR_EXPRESSION)
@@ -192,6 +196,15 @@ func __create_body_mode_states():
 
 	_body_mode_states[JUMP] = LexerState.new(patterns)
 	_body_mode_states[JUMP].add_transition(TokenType.Identifier, DESTINATION)
+	_body_mode_states[JUMP].add_transition(TokenType.ExpressionFunctionStart, JUMP_EXPRESSION)
+
+	_body_mode_states[JUMP_EXPRESSION] = LexerState.new(patterns)
+	form_expression_state(_body_mode_states[JUMP_EXPRESSION])
+	_body_mode_states[JUMP_EXPRESSION].add_transition(TokenType.ExpressionFunctionEnd, JUMP_CLOSE) 
+
+	_body_mode_states[JUMP_CLOSE] = LexerState.new(patterns)
+	_body_mode_states[JUMP_CLOSE].add_transition(TokenType.EndCommand, BASE)
+
 
 	_body_mode_states[DESTINATION] = LexerState.new(patterns)
 	_body_mode_states[DESTINATION].add_transition(TokenType.EndCommand, BASE, true)
@@ -211,7 +224,23 @@ func __create_body_mode_states():
 
 	# TODO: Flesh this out more so that it only accepts valid declarations and not just any expression 
 	#		Right now it just uses assignment rules. Also, it should accept "as <type>" and
+	#       SEE DECLARATION EXPLICIT TYPING state below
 	_body_mode_states[DECLARATION] = LexerState.new(patterns)
+	_body_mode_states[DECLARATION].add_transition(TokenType.Variable, DECLARATION_ASSIGNMENT)
+
+	_body_mode_states[DECLARATION_ASSIGNMENT] = LexerState.new(patterns)
+	_body_mode_states[DECLARATION_ASSIGNMENT].add_transition(TokenType.EqualToOrAssign, DECLARATION_VALUE)
+
+	_body_mode_states[DECLARATION_VALUE] = LexerState.new(patterns)
+	_body_mode_states[DECLARATION_VALUE].add_transition(TokenType.Str)
+	_body_mode_states[DECLARATION_VALUE].add_transition(TokenType.Number)
+	_body_mode_states[DECLARATION_VALUE].add_transition(TokenType.TrueToken)
+	_body_mode_states[DECLARATION_VALUE].add_transition(TokenType.FalseToken)
+	_body_mode_states[DECLARATION_VALUE].add_transition(TokenType.EndCommand, BASE)
+
+	# TODO: Accept 'as' token and then move to 'DECLARATION EXPLICIT TYPING 2 state' That accepts 
+	#		a type like `String`, `Number`, `Boolean`
+	_body_mode_states[DECLARATION_EXPLICIT_TYPING] = LexerState.new(patterns)
 
 	_body_mode_states[FORMAT_FUNCTION] = LexerState.new(patterns)
 	_body_mode_states[FORMAT_FUNCTION].add_transition(TokenType.FormatFunctionEnd, BASE, true)
@@ -243,7 +272,7 @@ func __create_body_mode_states():
 	pass
 
 
-func form_expression_state(expression_state):
+func form_expression_state(expression_state: LexerState):
 	expression_state.add_transition(TokenType.Number)
 	expression_state.add_transition(TokenType.Str)
 	expression_state.add_transition(TokenType.LeftParen)
@@ -268,7 +297,7 @@ func form_expression_state(expression_state):
 	expression_state.add_transition(TokenType.Comma)
 	expression_state.add_transition(TokenType.TrueToken)
 	expression_state.add_transition(TokenType.FalseToken)
-	expression_state.add_transition(TokenType.NullToken)
+	# expression_state.add_transition(TokenType.NullToken)
 	expression_state.add_transition(TokenType.Identifier)
 
 func __initialize():
@@ -284,7 +313,7 @@ func set_mode(mode: LexerMode):
 	if (mode == LexerMode.None): # do nothing/continue same mode
 		return
 
-	print("entering mode %s" % LexerMode.keys()[mode])
+	# print("entering mode %s" % LexerMode.keys()[mode])
 	self._mode = mode
 	if (mode == LexerMode.Header):
 		_current_mode_states = _header_mode_states
@@ -429,8 +458,8 @@ func tokenize_line(line: String, line_number: int) -> Array[Token]:
 				if !_current_mode_states.has(rule.enter_state):
 					printerr(
 						(
-							"Tried to enter unknown State[%s] - line(%s) col(%s)"
-							% [rule.enter_state, line_number, column]
+							"<%s:%s> Tried to enter unknown State[%s] - line(%s) col(%s)"
+							% [ErrorUtils.__SCRIPT_NAME(), ErrorUtils.__LINE(),rule.enter_state, line_number, column]
 						)
 					)
 					error = ERR_DOES_NOT_EXIST
@@ -441,13 +470,13 @@ func tokenize_line(line: String, line_number: int) -> Array[Token]:
 				if _should_track_indent:
 					if _indent_stack.front().key < indentation:
 						_indent_stack.append(IntBoolPair.new(indentation, false))
-			else:
-				printerr(
-					(
-						"Rule[%s] did not specify a state to enter - line(%s) col(%s)"
-						% [YarnGlobals.token_name(rule.token_type), line_number, column]
-					)
-				)
+			# else:
+			# 	printerr(
+			# 		(
+			# 			"Rule[%s] did not specify a state to enter - line(%s) col(%s)"
+			# 			% [YarnGlobals.token_name(rule.token_type), line_number, column]
+			# 		)
+			# 	)
 
 			matched = true
 			break
